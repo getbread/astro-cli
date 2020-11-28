@@ -13,6 +13,17 @@
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
+  branch = "master"
+  digest = "1:8b55be8259cd15a9b5740a7326d238843daf68a2a885a9a8ef1e1df45825533d"
+  name = "github.com/GeertJohan/go.rice"
+  packages = [
+    ".",
+    "embedded",
+  ]
+  pruneopts = "UT"
+  revision = "d954009f7238df62c766980934c8ea7f161d0e59"
+
+[[projects]]
   digest = "1:3eb77aef9ca7828bd0f81166688176a411d0ef87b89a66c43d49b06b9eb48101"
   name = "github.com/Masterminds/semver"
   packages = ["."]
@@ -70,6 +81,14 @@
   pruneopts = "UT"
   revision = "20f5889cbdc3c73dbd2862796665e7c465ade7d1"
   version = "v1.0.8"
+
+[[projects]]
+  digest = "1:8e8da6cc8cca12851d4e089d970a0f7387b3a6bcc8c459ff432213b03076a66d"
+  name = "github.com/daaku/go.zipexe"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "74d766ac1dde7458348221869a7d1e7e5fa0597e"
+  version = "v1.0.1"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -709,6 +728,8 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/GeertJohan/go.rice",
+    "github.com/GeertJohan/go.rice/embedded",
     "github.com/Masterminds/semver",
     "github.com/docker/cli/cli/command",
     "github.com/docker/cli/cli/config",

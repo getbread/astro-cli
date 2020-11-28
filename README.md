@@ -14,6 +14,7 @@ Available Commands:
   cluster         Manage Astronomer EE clusters
   completion      Generate autocompletions script for the specified shell (bash or zsh)
   config          Manage astro project configurations
+  dag-generate    Generate a DAG that follows Airflow best practices
   deploy          Deploy an airflow project
   deployment      Manage airflow deployments
   dev             Manage airflow projects

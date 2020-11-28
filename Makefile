@@ -13,6 +13,7 @@ dep:
 	dep ensure
 
 build:
+	rice embed-go -i ./daggenerate
 	go build -o ${OUTPUT} -ldflags "${LDFLAGS_VERSION} ${LDFLAGS_GIT_COMMIT}" main.go
 
 test:
