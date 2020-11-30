@@ -1,8 +1,8 @@
-Snowflake Destination Code
-Snowflake Destination Code
-Snowflake Destination Code
-Snowflake Destination Code
-Snowflake Destination Code
-Snowflake Destination Code
-Snowflake Destination Code
-Snowflake Destination Code
+
+    @task
+    def lake_to_snowflake():
+        return 'data loaded from lake to snowflake'
+
+    lake_to_snowflake(zendesk_to_lake())
+
+dag = taskflow()

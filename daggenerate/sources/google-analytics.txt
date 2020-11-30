@@ -1,7 +1,17 @@
-Google Analytics Source Code :)
-Google Analytics Source Code :)
-Google Analytics Source Code :)
-Google Analytics Source Code :)
-Google Analytics Source Code :)
-Google Analytics Source Code :)
-Google Analytics Source Code :)
+from airflow.decorators import dag, task
+from airflow.utils.dates import days_ago
+
+from typing import Dict
+import requests
+import logging
+
+default_args = {
+    'start_date': days_ago(1),
+}
+
+@dag(schedule_interval='@hourly', default_args=default_args, catchup=False)
+def taskflow():
+
+    @task
+    def zendesk_to_lake():
+        return 'data extracted from zendesk and written to lake'
