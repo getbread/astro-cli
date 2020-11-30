@@ -12,9 +12,9 @@ func init() {
 	// define files
 	file2 := &embedded.EmbeddedFile{
 		Filename:    "google-analytics.txt",
-		FileModTime: time.Unix(1606613344, 0),
+		FileModTime: time.Unix(1606746235, 0),
 
-		Content: string("Google Analytics Source Code :)\nGoogle Analytics Source Code :)\nGoogle Analytics Source Code :)\nGoogle Analytics Source Code :)\nGoogle Analytics Source Code :)\nGoogle Analytics Source Code :)\nGoogle Analytics Source Code :)\n"),
+		Content: string("from airflow.decorators import dag, task\nfrom airflow.utils.dates import days_ago\n\nfrom typing import Dict\nimport requests\nimport logging\n\ndefault_args = {\n    'start_date': days_ago(1),\n}\n\n@dag(schedule_interval='@hourly', default_args=default_args, catchup=False)\ndef taskflow():\n\n    @task\n    def zendesk_to_lake():\n        return 'data extracted from zendesk and written to lake'\n"),
 	}
 
 	// define dirs
@@ -48,9 +48,9 @@ func init() {
 	// define files
 	file4 := &embedded.EmbeddedFile{
 		Filename:    "snowflake.txt",
-		FileModTime: time.Unix(1606613344, 0),
+		FileModTime: time.Unix(1606746241, 0),
 
-		Content: string("Snowflake Destination Code\nSnowflake Destination Code\nSnowflake Destination Code\nSnowflake Destination Code\nSnowflake Destination Code\nSnowflake Destination Code\nSnowflake Destination Code\nSnowflake Destination Code\n"),
+		Content: string("\n    @task\n    def lake_to_snowflake():\n        return 'data loaded from lake to snowflake'\n\n    lake_to_snowflake(zendesk_to_lake())\n\ndag = taskflow()"),
 	}
 
 	// define dirs
