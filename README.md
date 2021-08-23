@@ -119,7 +119,7 @@ This will generate a skeleton project directory:
 ```
 .
 ├── dags
-│   ├── example-dag.py
+│   ├── example_dag.py
 ├── Dockerfile
 ├── include
 ├── packages.txt

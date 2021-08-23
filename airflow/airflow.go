@@ -71,7 +71,7 @@ func Init(path string, airflowImageTag string) error {
 		"requirements.txt":      "",
 		".env":                  "",
 		"airflow_settings.yaml": include.Settingsyml,
-		"dags/example-dag.py":   include.Exampledag,
+		"dags/example_dag.py":   include.Exampledag,
 	}
 
 	// Initailize directories
