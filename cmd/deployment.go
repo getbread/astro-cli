@@ -11,6 +11,7 @@ import (
 	"github.com/astronomer/astro-cli/pkg/input"
 	sa "github.com/astronomer/astro-cli/serviceaccount"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -426,6 +427,7 @@ func deploymentDelete(cmd *cobra.Command, args []string, client *houston.Client,
 }
 
 func deploymentList(cmd *cobra.Command, args []string, client *houston.Client, out io.Writer) error {
+	logrus.Debug("debug log")
 	ws, err := coalesceWorkspace()
 	if err != nil {
 		return errors.Wrap(err, "failed to find a valid workspace")

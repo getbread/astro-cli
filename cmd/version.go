@@ -3,12 +3,12 @@ package cmd
 import (
 	"io"
 
-	"github.com/spf13/cobra"
-
 	"github.com/astronomer/astro-cli/houston"
 	"github.com/astronomer/astro-cli/pkg/github"
 	"github.com/astronomer/astro-cli/pkg/httputil"
 	"github.com/astronomer/astro-cli/version"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 func newVersionCmd(client *houston.Client, out io.Writer) *cobra.Command {
@@ -46,7 +46,7 @@ func newUpgradeCheckCmd(client *houston.Client, out io.Writer) *cobra.Command {
 func printVersion(client *houston.Client, cmd *cobra.Command, out io.Writer, args []string) error {
 	// Silence Usage as we have now validated command input
 	cmd.SilenceUsage = true
-
+	logrus.Debug("debug log")
 	err := version.PrintVersion(client, out)
 	if err != nil {
 		return err
