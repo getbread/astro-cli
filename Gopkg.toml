@@ -67,3 +67,8 @@
 [[constraint]]
   name = "github.com/moby/buildkit"
   version = "0.6.3"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "v1.0.3"
+
