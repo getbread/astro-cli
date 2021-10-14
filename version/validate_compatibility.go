@@ -6,6 +6,7 @@ import (
 
 	"github.com/astronomer/astro-cli/deployment"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Masterminds/semver"
 	"github.com/astronomer/astro-cli/houston"
@@ -17,6 +18,7 @@ func ValidateCompatibility(client *houston.Client, out io.Writer, cliVer string,
 	if skipVerCheck {
 		return nil
 	}
+	logrus.Debug("checking if astro-cli version is not compatible with platform")
 
 	serverCfg, err := deployment.AppVersion(client)
 	if err != nil {
@@ -31,7 +33,7 @@ func ValidateCompatibility(client *houston.Client, out io.Writer, cliVer string,
 }
 
 // compareVersions print warning message if astro-cli has a variation in the minor version. Errors if major version is behind.
-func compareVersions(compareVer string, currentVer string, out io.Writer) error {
+func compareVersions(compareVer, currentVer string, out io.Writer) error {
 	semCompareVer, err := parseVersion(compareVer)
 	if err != nil {
 		return err
@@ -49,11 +51,11 @@ func compareVersions(compareVer string, currentVer string, out io.Writer) error 
 	compareMinor := semCompareVer.Minor()
 
 	if currMajor < compareMajor {
-		return errors.Errorf(messages.ERROR_NEW_MAJOR_VERSION, currentVer, compareVer)
+		return errors.Errorf(messages.ErrNewMajorVersion, currentVer, compareVer)
 	} else if currMinor < compareMinor {
-		fmt.Fprintf(out, messages.WARNING_NEW_MINOR_VERSION, currentVer, compareVer)
+		fmt.Fprintf(out, messages.WarningNewMinorVersion, currentVer, compareVer)
 	} else if currMinor > compareMinor {
-		fmt.Fprintf(out, messages.WARNING_DOWNGRADE_VERSION, currentVer, compareVer)
+		fmt.Fprintf(out, messages.WarningDowngradeVersion, currentVer, compareVer)
 	}
 
 	return nil

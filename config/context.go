@@ -10,6 +10,10 @@ import (
 	"github.com/astronomer/astro-cli/pkg/printutil"
 )
 
+var (
+	ErrInvalidConfigNoDomain = errors.New("cluster config invalid, no domain specified")
+)
+
 // newTableOut construct new printutil.Table
 func newTableOut() *printutil.Table {
 	return &printutil.Table{
@@ -36,7 +40,7 @@ func GetCurrentContext() (Context, error) {
 	c := Context{}
 
 	domain := CFG.Context.GetHomeString()
-	if len(domain) == 0 {
+	if domain == "" {
 		return Context{}, errors.New("No context set, have you authenticated to a cluster?")
 	}
 
@@ -53,12 +57,12 @@ func (c Context) PrintContext(out io.Writer) error {
 	}
 
 	cluster := c.Domain
-	if len(cluster) == 0 {
+	if cluster == "" {
 		cluster = "N/A"
 	}
 
 	workspace := c.Workspace
-	if len(workspace) == 0 {
+	if workspace == "" {
 		workspace = "N/A"
 	}
 	tab := newTableOut()
@@ -86,8 +90,8 @@ func PrintCurrentContext(out io.Writer) error {
 // GetContextKey allows a cluster domain to be used without interfering
 // with viper's dot (.) notation for fetching configs by replacing with underscores (_)
 func (c Context) GetContextKey() (string, error) {
-	if len(c.Domain) == 0 {
-		return "", errors.New("cluster config invalid, no domain specified")
+	if c.Domain == "" {
+		return "", ErrInvalidConfigNoDomain
 	}
 
 	return strings.Replace(c.Domain, ".", "_", -1), nil
@@ -174,10 +178,11 @@ func (c Context) SwitchContext() error {
 	co, err := c.GetContext()
 	if err != nil {
 		return err
-	} else {
-		viperHome.Set("context", c.Domain)
-		saveConfig(viperHome, HomeConfigFile)
 	}
+
+	viperHome.Set("context", c.Domain)
+	saveConfig(viperHome, HomeConfigFile)
+
 	tab := newTableOut()
 	tab.AddRow([]string{co.Domain, co.Workspace}, false)
 	tab.SuccessMsg = "\n Switched cluster"

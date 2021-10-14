@@ -35,7 +35,7 @@ func newClusterListCmd(_ *houston.Client, out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func newClusterSwitchCmd(_ *houston.Client, out io.Writer) *cobra.Command {
+func newClusterSwitchCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "switch",
 		Aliases: []string{"sw"},

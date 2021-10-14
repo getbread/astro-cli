@@ -12,12 +12,13 @@ import (
 	"github.com/astronomer/astro-cli/pkg/input"
 	"github.com/astronomer/astro-cli/workspace"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // basicAuth handles authentication with the houston api
 func basicAuth(username, password string) (string, error) {
 	if password == "" {
-		password, _ = input.InputPassword(messages.INPUT_PASSWORD)
+		password, _ = input.InputPassword(messages.InputPassword)
 	}
 
 	req := houston.Request{
@@ -46,10 +47,10 @@ func switchToLastUsedWorkspace(c config.Context, workspaces []houston.Workspace)
 }
 
 // oAuth handles oAuth with houston api
-func oAuth(oAuthUrl string) string {
-	fmt.Println("\n" + messages.HOUSTON_OAUTH_REDIRECT)
-	fmt.Println(oAuthUrl + "\n")
-	return input.InputText(messages.INPUT_OAUTH_TOKEN)
+func oAuth(oAuthURL string) string {
+	fmt.Println("\n" + messages.HoustonOAuthRedirect)
+	fmt.Println(oAuthURL + "\n")
+	return input.InputText(messages.InputOAuthToken)
 }
 
 // registryAuth authenticates with the private registry
@@ -70,7 +71,7 @@ func registryAuth() error {
 		return err
 	}
 
-	fmt.Printf(messages.REGISTRY_AUTH_SUCCESS, registry)
+	fmt.Printf(messages.RegistryAuthSuccess, registry)
 
 	return nil
 }
@@ -82,7 +83,7 @@ func Login(domain string, oAuthOnly bool, username, password string, client *hou
 
 	// If no domain specified
 	// Create cluster if it does not exist
-	if len(domain) != 0 {
+	if domain != "" {
 		if !cluster.Exists(domain) {
 			// Save new cluster since it did not exists
 			err = cluster.SetCluster(domain)
@@ -114,10 +115,10 @@ func Login(domain string, oAuthOnly bool, username, password string, client *hou
 	authConfig := acResp.Data.GetAuthConfig
 
 	if username == "" && !oAuthOnly && authConfig.LocalEnabled {
-		username = input.InputText(messages.INPUT_USERNAME)
+		username = input.InputText(messages.InputUsername)
 	}
 
-	if len(username) == 0 {
+	if username == "" {
 		if len(authConfig.AuthProviders) > 0 {
 			token = oAuth(c.GetAppURL() + "/token")
 		} else {
@@ -130,7 +131,7 @@ func Login(domain string, oAuthOnly bool, username, password string, client *hou
 				return errors.Wrap(err, "local auth login failed")
 			}
 		} else {
-			fmt.Println(messages.HOUSTON_BASIC_AUTH_DISABLED)
+			fmt.Println(messages.HoustonBasicAuthDisabled)
 		}
 	}
 
@@ -152,7 +153,7 @@ func Login(domain string, oAuthOnly bool, username, password string, client *hou
 		c.SetContextKey("workspace", w.ID)
 		// update last used workspace ID
 		c.SetContextKey("last_used_workspace", w.ID)
-		fmt.Printf(messages.CONFIG_SET_DEFAULT_WORKSPACE, w.Label, w.ID)
+		fmt.Printf(messages.ConfigSetDefaultWorkspace, w.Label, w.ID)
 	}
 
 	if len(workspaces) > 1 {
@@ -161,16 +162,18 @@ func Login(domain string, oAuthOnly bool, username, password string, client *hou
 
 		if !isSwitched {
 			// show switch menu with available workspace IDs
-			fmt.Println("\n" + messages.CLI_CHOOSE_WORKSPACE)
+			fmt.Println("\n" + messages.CLIChooseWorkspace)
 			err := workspace.Switch("", client, out)
 			if err != nil {
-				fmt.Printf(messages.CLI_SET_WORKSPACE_EXAMPLE)
+				fmt.Printf(messages.CLISetWorkspaceExample)
 			}
 		}
 	}
 
 	err = registryAuth()
 	if err != nil {
+		log.Debugf("There was an error logging into registry: %s", err.Error())
+
 		fmt.Printf(messages.RegistryAuthFail)
 	}
 

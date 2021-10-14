@@ -62,10 +62,10 @@ func CreateUsingWorkspaceUUID(workspaceUuid, label, category, role string, clien
 	return tab.Print(out)
 }
 
-func DeleteUsingWorkspaceUUID(serviceAccountId, workspaceId string, client *houston.Client, out io.Writer) error {
+func DeleteUsingWorkspaceUUID(serviceAccountID, workspaceId string, client *houston.Client, out io.Writer) error {
 	req := houston.Request{
 		Query:     houston.WorkspaceServiceAccountDeleteRequest,
-		Variables: map[string]interface{}{"serviceAccountUuid": serviceAccountId, "workspaceUuid": workspaceId},
+		Variables: map[string]interface{}{"serviceAccountUuid": serviceAccountID, "workspaceUuid": workspaceId},
 	}
 
 	resp, err := req.DoWithClient(client)
@@ -80,10 +80,10 @@ func DeleteUsingWorkspaceUUID(serviceAccountId, workspaceId string, client *hous
 	return nil
 }
 
-func DeleteUsingDeploymentUUID(serviceAccountId, deploymentId string, client *houston.Client, out io.Writer) error {
+func DeleteUsingDeploymentUUID(serviceAccountID, deploymentId string, client *houston.Client, out io.Writer) error {
 	req := houston.Request{
 		Query:     houston.DeploymentServiceAccountDeleteRequest,
-		Variables: map[string]interface{}{"serviceAccountUuid": serviceAccountId, "deploymentUuid": deploymentId},
+		Variables: map[string]interface{}{"serviceAccountUuid": serviceAccountID, "deploymentUuid": deploymentId},
 	}
 
 	resp, err := req.DoWithClient(client)

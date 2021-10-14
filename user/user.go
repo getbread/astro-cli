@@ -11,7 +11,7 @@ import (
 
 // Create verifies input before sending a CreateUser API call to houston
 func Create(email, password string, client *houston.Client, out io.Writer) error {
-	if len(email) == 0 {
+	if email == "" {
 		email = input.InputText("Email: ")
 	}
 	if password == "" {

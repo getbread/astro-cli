@@ -23,7 +23,7 @@ func InputText(promptText string) string {
 // InputPassword requests a users passord, does not print out what they entered, and returns it
 func InputPassword(promptText string) (string, error) {
 	fmt.Print(promptText)
-	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	bytePassword, err := terminal.ReadPassword(syscall.Stdin)
 	if err != nil {
 		return "", err
 	}

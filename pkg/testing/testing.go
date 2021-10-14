@@ -21,7 +21,7 @@ func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 // NewTestClient returns *httputil.HTTPClient with Transport replaced to avoid making real calls
 func NewTestClient(fn RoundTripFunc) *httputil.HTTPClient {
 	testClient := httputil.NewHTTPClient()
-	testClient.HTTPClient.Transport = RoundTripFunc(fn)
+	testClient.HTTPClient.Transport = fn
 	return testClient
 }
 
@@ -50,8 +50,8 @@ contexts:
     last_used_workspace: ck05r3bor07h40d02y2hw4n4v
     workspace: ck05r3bor07h40d02y2hw4n4v
 `)
-	config := strings.ReplaceAll(string(configRaw), "HOUSTON_HOST", houstonHost)
-	return []byte(config)
+	cfg := strings.ReplaceAll(string(configRaw), "HOUSTON_HOST", houstonHost)
+	return []byte(cfg)
 }
 
 func InitTestConfig() {

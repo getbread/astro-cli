@@ -28,13 +28,14 @@ type cfgs struct {
 	ShowWarnings       cfg
 	AirflowReleasesURL cfg
 	SkipVerifyTLS      cfg
+	Verbosity          cfg
 }
 
 // Creates a new cfg struct
-func newCfg(path string, dflt string) cfg {
-	cfg := cfg{path, dflt}
-	CFGStrMap[path] = cfg
-	return cfg
+func newCfg(path, dflt string) cfg {
+	config := cfg{path, dflt}
+	CFGStrMap[path] = config
+	return config
 }
 
 // SetHomeString sets a string value in home config

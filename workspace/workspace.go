@@ -57,7 +57,7 @@ func List(client *houston.Client, out io.Writer) error {
 
 	ws := r.Data.GetWorkspaces
 
-	c, err := config.GetCurrentContext()
+	c, _ := config.GetCurrentContext()
 	tab := newTableOut()
 	for _, w := range ws {
 		name := w.Label
@@ -107,7 +107,7 @@ func GetCurrentWorkspace() (string, error) {
 		return "", err
 	}
 
-	if len(c.Workspace) == 0 {
+	if c.Workspace == "" {
 		return "", errors.New("Current workspace context not set, you can switch to a workspace with \n\tastro workspace switch WORKSPACEID")
 	}
 
@@ -162,7 +162,7 @@ func getWorkspaceSelection(client *houston.Client, out io.Writer) (string, error
 
 // Switch switches workspaces
 func Switch(id string, client *houston.Client, out io.Writer) error {
-	if len(id) == 0 {
+	if id == "" {
 		_id, err := getWorkspaceSelection(client, out)
 		if err != nil {
 			return err

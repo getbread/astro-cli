@@ -46,7 +46,7 @@ func newAuthLoginCmd(client *houston.Client, out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func newAuthLogoutCmd(_ *houston.Client, out io.Writer) *cobra.Command {
+func newAuthLogoutCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logout",
 		Short: "Logout of Astronomer",

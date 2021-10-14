@@ -28,7 +28,7 @@ func Exists(path string) (bool, error) {
 }
 
 // WriteStringToFile write a string to a file
-func WriteStringToFile(path string, s string) error {
+func WriteStringToFile(path, s string) error {
 	return WriteToFile(path, strings.NewReader(s))
 }
 

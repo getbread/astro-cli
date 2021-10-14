@@ -253,10 +253,10 @@ func TestDelete(t *testing.T) {
 		}
 	})
 	api := houston.NewHoustonClient(client)
-	wsId := "ckc0j8y1101xo0760or02jdi7"
+	wsID := "ckc0j8y1101xo0760or02jdi7"
 
 	buf := new(bytes.Buffer)
-	err := Delete(wsId, api, buf)
+	err := Delete(wsID, api, buf)
 	assert.NoError(t, err)
 	expected := "\n Successfully deleted workspace\n"
 	assert.Equal(t, expected, buf.String())
@@ -273,10 +273,10 @@ func TestDeleteError(t *testing.T) {
 		}
 	})
 	api := houston.NewHoustonClient(client)
-	wsId := "ckc0j8y1101xo0760or02jdi7"
+	wsID := "ckc0j8y1101xo0760or02jdi7"
 
 	buf := new(bytes.Buffer)
-	err := Delete(wsId, api, buf)
+	err := Delete(wsID, api, buf)
 	assert.EqualError(t, err, "API error (500): Internal Server Error")
 }
 
@@ -389,10 +389,10 @@ contexts:
 		}
 	})
 	api := houston.NewHoustonClient(client)
-	wsId := "ckbv7zvb100pe0760xp98qnh9"
+	wsID := "ckbv7zvb100pe0760xp98qnh9"
 
 	buf := new(bytes.Buffer)
-	err = Switch(wsId, api, buf)
+	err = Switch(wsID, api, buf)
 	assert.NoError(t, err)
 	expected := " CLUSTER                             WORKSPACE                           \n localhost                           ckbv7zvb100pe0760xp98qnh9           \n"
 	assert.Equal(t, expected, buf.String())
@@ -426,10 +426,10 @@ contexts:
 		}
 	})
 	api := houston.NewHoustonClient(client)
-	wsId := "ckbv7zvb100pe0760xp98qnh9"
+	wsID := "ckbv7zvb100pe0760xp98qnh9"
 
 	buf := new(bytes.Buffer)
-	err = Switch(wsId, api, buf)
+	err = Switch(wsID, api, buf)
 	assert.EqualError(t, err, "workspace id is not valid: API error (500): Internal Server Error")
 }
 

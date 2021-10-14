@@ -23,7 +23,7 @@ Menu will be presented if you do not specify a deployment name:
   $ astro deploy
 `
 
-func newDeployCmd(_ *houston.Client, out io.Writer) *cobra.Command {
+func newDeployCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "deploy DEPLOYMENT",
 		Short:   "Deploy an Airflow project",
@@ -60,7 +60,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if git.HasUncommittedChanges() && !forceDeploy {
-		fmt.Println(messages.REGISTRY_UNCOMMITTED_CHANGES)
+		fmt.Println(messages.RegistryUncommittedChanges)
 		return nil
 	}
 

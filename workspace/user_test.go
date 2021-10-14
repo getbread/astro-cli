@@ -70,10 +70,10 @@ func TestRemove(t *testing.T) {
 	})
 	api := houston.NewHoustonClient(client)
 	id := "ck1qg6whg001r08691y117hub"
-	userId := "ckc0eir8e01gj07608ajmvia1"
+	userID := "ckc0eir8e01gj07608ajmvia1"
 
 	buf := new(bytes.Buffer)
-	err := Remove(id, userId, api, buf)
+	err := Remove(id, userID, api, buf)
 	assert.NoError(t, err)
 	expected := ` NAME                          WORKSPACE ID                                      USER_ID                                           
                                ckc0eir8e01gj07608ajmvia1                         ckc0eir8e01gj07608ajmvia1                         
@@ -148,10 +148,10 @@ func TestListRoles(t *testing.T) {
 		}
 	})
 	api := houston.NewHoustonClient(client)
-	wsId := "ck1qg6whg001r08691y117hub"
+	wsID := "ck1qg6whg001r08691y117hub"
 
 	buf := new(bytes.Buffer)
-	err := ListRoles(wsId, api, buf)
+	err := ListRoles(wsID, api, buf)
 	assert.NoError(t, err)
 	expected := ` USERNAME                 ID                            ROLE                
  andrii@astronomer.io     ckbv7zpkh00og0760ki4mhl6r     WORKSPACE_ADMIN     
@@ -170,10 +170,10 @@ func TestListRolesError(t *testing.T) {
 		}
 	})
 	api := houston.NewHoustonClient(client)
-	wsId := "ck1qg6whg001r08691y117hub"
+	wsID := "ck1qg6whg001r08691y117hub"
 
 	buf := new(bytes.Buffer)
-	err := ListRoles(wsId, api, buf)
+	err := ListRoles(wsID, api, buf)
 	assert.EqualError(t, err, "API error (500): Internal Server Error")
 }
 

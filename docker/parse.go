@@ -16,7 +16,7 @@ import (
 type Command struct {
 	Cmd       string   // lower cased command name (ex: `from`)
 	SubCmd    string   // for ONBUILD only this holds the sub-command
-	Json      bool     // whether the value is written in json form
+	JSON      bool     // whether the value is written in json form
 	Original  string   // The original source line
 	StartLine int      // The original source line number which starts this command
 	EndLine   int      // The original source line number which ends this command
@@ -75,7 +75,7 @@ func ParseReader(file io.Reader) ([]Command, error) {
 			child = child.Next.Children[0]
 		}
 
-		cmd.Json = child.Attributes["json"]
+		cmd.JSON = child.Attributes["json"]
 		for n := child.Next; n != nil; n = n.Next {
 			cmd.Value = append(cmd.Value, n.Value)
 		}

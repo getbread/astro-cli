@@ -192,7 +192,7 @@ func Test_airflowVersionFromDockerFile(t *testing.T) {
 
 	// Invalid Dockerfile
 	dockerfile = "Dockerfile.not.real"
-	version, err = airflowVersionFromDockerFile(airflowHome, dockerfile)
+	_, err = airflowVersionFromDockerFile(airflowHome, dockerfile)
 
 	assert.Error(t, err)
 }

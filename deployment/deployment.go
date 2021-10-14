@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/Masterminds/semver"
+	"github.com/sirupsen/logrus"
 
 	"github.com/astronomer/astro-cli/houston"
 	"github.com/astronomer/astro-cli/pkg/input"
@@ -39,6 +40,7 @@ func AppVersion(client *houston.Client) (*houston.AppConfig, error) {
 
 // AppConfig returns application config from houston-api
 func AppConfig(client *houston.Client) (*houston.AppConfig, error) {
+	logrus.Debug("Checking AppConfig from houston-api")
 	req := houston.Request{
 		Query: houston.AppConfigRequest,
 	}
@@ -51,6 +53,7 @@ func AppConfig(client *houston.Client) (*houston.AppConfig, error) {
 }
 
 func checkManualReleaseNames(client *houston.Client) bool {
+	logrus.Debug("Checking checkManualReleaseNames through appConfig from houston-api")
 	req := houston.Request{
 		Query: houston.AppConfigRequest,
 	}
@@ -64,6 +67,7 @@ func checkManualReleaseNames(client *houston.Client) bool {
 
 // CheckNFSMountDagDeployment returns true when we can set custom NFS location for dags
 func CheckNFSMountDagDeployment(client *houston.Client) bool {
+	logrus.Debug("Checking checkNFSMountDagDeployment through appConfig from houston-api")
 	req := houston.Request{
 		Query: houston.AppConfigRequest,
 	}
@@ -72,20 +76,47 @@ func CheckNFSMountDagDeployment(client *houston.Client) bool {
 		return false
 	}
 
-	return r.Data.GetAppConfig.NfsMountDagDeployment
+	return r.Data.GetAppConfig.Flags.NfsMountDagDeployment
 }
 
 func CheckHardDeleteDeployment(client *houston.Client) bool {
+	logrus.Debug("Checking for hard delete deployment flag")
 	appConfig, err := AppConfig(client)
 	if err != nil {
 		return false
 	}
-	return appConfig.HardDeleteDeployment
+	return appConfig.Flags.HardDeleteDeployment
+}
+
+func CheckPreCreateNamespaceDeployment(client *houston.Client) bool {
+	logrus.Debug("Checking for pre created deployment flag")
+	appConfig, err := AppConfig(client)
+	if err != nil {
+		return false
+	}
+	return appConfig.Flags.ManualNamespaceNames
+}
+
+func CheckTriggererEnabled(client *houston.Client) bool {
+	logrus.Debug("Checking for triggerer flag")
+	appConfig, err := AppConfig(client)
+	if err != nil {
+		return false
+	}
+	return appConfig.Flags.TriggererEnabled
 }
 
 // Create airflow deployment
-func Create(label, ws, releaseName, cloudRole, executor, airflowVersion, dagDeploymentType, nfsLocation string, client *houston.Client, out io.Writer) error {
+func Create(label, ws, releaseName, cloudRole, executor, airflowVersion, dagDeploymentType, nfsLocation string, triggererReplicas int, client *houston.Client, out io.Writer) error {
 	vars := map[string]interface{}{"label": label, "workspaceId": ws, "executor": executor, "cloudRole": cloudRole}
+
+	if CheckPreCreateNamespaceDeployment(client) {
+		namespace, err := getDeploymentSelectionNamespaces(client, out)
+		if err != nil {
+			return err
+		}
+		vars["namespace"] = namespace
+	}
 
 	if releaseName != "" && checkManualReleaseNames(client) {
 		vars["releaseName"] = releaseName
@@ -97,6 +128,10 @@ func Create(label, ws, releaseName, cloudRole, executor, airflowVersion, dagDepl
 
 	if dagDeploymentType == "volume" && nfsLocation != "" {
 		vars["dagDeployment"] = map[string]string{"nfsLocation": nfsLocation, "type": dagDeploymentType}
+	}
+
+	if CheckTriggererEnabled(client) {
+		vars["triggererReplicas"] = triggererReplicas
 	}
 	req := houston.Request{
 		Query:     houston.DeploymentCreateRequest,
@@ -163,6 +198,57 @@ func Delete(id string, hardDelete bool, client *houston.Client, out io.Writer) e
 	return nil
 }
 
+// list all available namespaces
+func getDeploymentSelectionNamespaces(client *houston.Client, out io.Writer) (string, error) {
+
+	tab := &printutil.Table{
+		Padding:        []int{30},
+		DynamicPadding: true,
+		Header:         []string{"AVAILABLE KUBERNETES NAMESPACES"},
+	}
+
+	logrus.Debug("checking namespaces available for platform")
+	tab.GetUserInput = true
+
+	req := houston.Request{
+		Query: houston.AvailableNamespacesGetRequest,
+	}
+
+	r, err := req.DoWithClient(client)
+	if err != nil {
+		return "", err
+	}
+
+	names := r.Data.GetDeploymentNamespaces
+
+	if len(names) == 0 {
+		return "", errors.New("no kubernetes namespaces are available")
+	}
+
+	for _, namespace := range names {
+		name := namespace.Name
+
+		tab.AddRow([]string{name}, false)
+	}
+
+	tab.Print(out)
+
+	in := input.InputText("\n> ")
+	i, err := strconv.ParseInt(
+		in,
+		10,
+		64,
+	)
+
+	if err != nil {
+		return "", fmt.Errorf("cannot parse %s to int", in)
+	}
+	if i > int64(len(names)) {
+		return "", errors.New("Number is out of available range")
+	}
+	return names[i-1].Name, nil
+}
+
 // List all airflow deployments
 func List(ws string, all bool, client *houston.Client, out io.Writer) error {
 	var deployments []houston.Deployment
@@ -209,7 +295,7 @@ func List(ws string, all bool, client *houston.Client, out io.Writer) error {
 }
 
 // Update an airflow deployment
-func Update(id, cloudRole string, args map[string]string, dagDeploymentType, nfsLocation string, client *houston.Client, out io.Writer) error {
+func Update(id, cloudRole string, args map[string]string, dagDeploymentType, nfsLocation string, triggererReplicas int, client *houston.Client, out io.Writer) error {
 	vars := map[string]interface{}{"deploymentId": id, "payload": args, "cloudRole": cloudRole}
 
 	// sync with commander only when we have cloudRole
@@ -219,6 +305,10 @@ func Update(id, cloudRole string, args map[string]string, dagDeploymentType, nfs
 
 	if dagDeploymentType != "" {
 		vars["dagDeployment"] = map[string]string{"nfsLocation": nfsLocation, "type": dagDeploymentType}
+	}
+
+	if CheckTriggererEnabled(client) {
+		vars["triggererReplicas"] = triggererReplicas
 	}
 
 	req := houston.Request{

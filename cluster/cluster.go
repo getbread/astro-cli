@@ -137,7 +137,7 @@ func getClusterSelection() (string, error) {
 // SwitchCluster is a thin wrapper around the switch cluster receiver
 // Returns error
 func Switch(domain string) error {
-	if len(domain) == 0 {
+	if domain == "" {
 		d, err := getClusterSelection()
 		if err != nil {
 			return err
