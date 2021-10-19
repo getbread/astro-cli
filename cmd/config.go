@@ -87,7 +87,7 @@ func configGet(cmd *cobra.Command, args []string, globalFlag bool) error {
 }
 
 func configSet(cmd *cobra.Command, args []string, globalFlag bool) error {
-	if len(args) != 2 {
+	if len(args) != 2 { // nolint:gomnd
 		return errors.New(messages.ConfigInvalidSetArgs)
 	}
 
@@ -101,10 +101,15 @@ func configSet(cmd *cobra.Command, args []string, globalFlag bool) error {
 	// Silence Usage as we have now validated command input
 	cmd.SilenceUsage = true
 
+	var err error
 	if globalFlag {
-		cfg.SetHomeString(args[1])
+		err = cfg.SetHomeString(args[1])
 	} else {
-		cfg.SetProjectString(args[1])
+		err = cfg.SetProjectString(args[1])
+	}
+
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf(messages.ConfigSetSuccess+"\n", cfg.Path, args[1])

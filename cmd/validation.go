@@ -10,12 +10,25 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	volumeDeploymentType = "volume"
+	imageDeploymentType  = "image"
+)
+
+type ErrParsingKV struct {
+	kv string
+}
+
+func (e ErrParsingKV) Error() string {
+	return fmt.Sprintf("failed to parse key value pair (%s)", e.kv)
+}
+
 func argsToMap(args []string) (map[string]string, error) {
 	argsMap := make(map[string]string)
 	for _, kv := range args {
 		split := strings.Split(kv, "=")
 		if len(split) == 1 {
-			return nil, fmt.Errorf("Failed to parse key value pair (%s)", kv)
+			return nil, ErrParsingKV{kv: kv}
 		}
 
 		argsMap[split[0]] = split[1]
@@ -40,11 +53,11 @@ func updateArgValidator(args, validArgs []string) error {
 	for _, kv := range args[1:] {
 		split := strings.Split(kv, "=")
 		if len(split) == 1 {
-			return fmt.Errorf("Failed to parse key value pair (%s)", kv)
+			return errors.Errorf("Failed to parse key value pair (%s)", kv)
 		}
 		k := split[0]
 		if !isValidUpdateAttr(k, validArgs) {
-			return fmt.Errorf("invalid update arg key specified (%s)", k)
+			return errors.Errorf("invalid update arg key specified (%s)", k)
 		}
 	}
 
@@ -103,10 +116,10 @@ func validateRole(role string) error {
 }
 
 func validateDagDeploymentArgs(dagDeploymentType, nfsLocation string) error {
-	if dagDeploymentType != "image" && dagDeploymentType != "volume" && dagDeploymentType != "" {
+	if dagDeploymentType != imageDeploymentType && dagDeploymentType != volumeDeploymentType && dagDeploymentType != "" {
 		return errors.New("please specify the correct DAG deployment type, one of the following: image, volume")
 	}
-	if dagDeploymentType == "volume" && nfsLocation == "" {
+	if dagDeploymentType == volumeDeploymentType && nfsLocation == "" {
 		return errors.New("please specify the nfs location via --nfs-location flag")
 	}
 	return nil

@@ -62,8 +62,6 @@ func FindDirInPath(search string) (string, error) {
 		// Set the directory, and try again
 		workingDir = path.Dir(workingDir)
 	}
-
-	return "", nil
 }
 
 // IsEmptyDir checks if path is an empty dir

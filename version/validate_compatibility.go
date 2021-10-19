@@ -50,11 +50,12 @@ func compareVersions(compareVer, currentVer string, out io.Writer) error {
 	compareMajor := semCompareVer.Major()
 	compareMinor := semCompareVer.Minor()
 
-	if currMajor < compareMajor {
+	switch {
+	case currMajor < compareMajor:
 		return errors.Errorf(messages.ErrNewMajorVersion, currentVer, compareVer)
-	} else if currMinor < compareMinor {
+	case currMinor < compareMinor:
 		fmt.Fprintf(out, messages.WarningNewMinorVersion, currentVer, compareVer)
-	} else if currMinor > compareMinor {
+	case currMinor > compareMinor:
 		fmt.Fprintf(out, messages.WarningDowngradeVersion, currentVer, compareVer)
 	}
 

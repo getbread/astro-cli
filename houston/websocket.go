@@ -93,7 +93,9 @@ func Subscribe(jwtToken, url, queryMessage string) error {
 				}
 			}
 			var resp WSResponse
-			json.Unmarshal(message, &resp)
+			if err = json.Unmarshal(message, &resp); err != nil {
+				log.Fatal(err)
+			}
 			fmt.Print(resp.Payload.Data.Log.Log)
 		}
 	}()

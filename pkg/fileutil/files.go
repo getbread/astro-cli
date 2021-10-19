@@ -2,11 +2,16 @@ package fileutil
 
 import (
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
+)
+
+const (
+	defaultFilePerm fs.FileMode = 0o777
 )
 
 // Exists returns a boolean indicating if the given path already exists
@@ -36,7 +41,7 @@ func WriteStringToFile(path, s string) error {
 func WriteToFile(path string, r io.Reader) error {
 	dir := filepath.Dir(path)
 	if dir != "" {
-		if err := os.MkdirAll(dir, 0777); err != nil {
+		if err := os.MkdirAll(dir, defaultFilePerm); err != nil {
 			return err
 		}
 	}

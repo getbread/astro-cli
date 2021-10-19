@@ -14,7 +14,7 @@ import (
 
 // RepoLatestResponse represents a tag info response from Github API
 type RepoLatestResponse struct {
-	Url         string    `json:"url"`
+	URL         string    `json:"url"`
 	TagName     string    `json:"tag_name"`
 	Draft       bool      `json:"draft"`
 	CreatedAt   time.Time `json:"created_at"`

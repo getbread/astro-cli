@@ -35,7 +35,7 @@ func prepareDefaultAirflowImageTag(airflowVersion string, httpClient *airflowver
 		default:
 			return "", err
 		case houston.ErrVerboseInaptPermissions:
-			return "", errors.New("The --airflow-version flag is not supported if you're not authenticated to Astronomer. Please authenticate and try again.")
+			return "", errors.New("the --airflow-version flag is not supported if you're not authenticated to Astronomer. Please authenticate and try again")
 		}
 	}
 

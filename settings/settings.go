@@ -2,13 +2,13 @@ package settings
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 
 	"github.com/astronomer/astro-cli/docker"
 	"github.com/astronomer/astro-cli/messages"
 	"github.com/astronomer/astro-cli/pkg/fileutil"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -62,7 +62,7 @@ func InitSettings() {
 
 	err := viperSettings.Unmarshal(&settings)
 	if err != nil {
-		errors.Wrap(err, "unable to decode into struct")
+		log.Fatalf("unable to decode into struct: %s", err.Error())
 	}
 }
 
@@ -133,48 +133,52 @@ func AddConnections(id string, airflowVersion uint64) {
 	airflowCommand := baseListCmd
 	out := docker.AirflowCommand(id, airflowCommand)
 
-	for _, conn := range connections {
-		if objectValidator(0, conn.ConnID) {
-			quotedConnID := "'" + conn.ConnID + "'"
-
-			if strings.Contains(out, quotedConnID) {
-				fmt.Printf("Found Connection: \"%s\"...replacing...\n", conn.ConnID)
-				airflowCommand = fmt.Sprintf("%s %s \"%s\"", baseRmCmd, connIDArg, conn.ConnID)
-				docker.AirflowCommand(id, airflowCommand)
-			}
-
-			if !objectValidator(1, conn.ConnType, conn.ConnURI) {
-				fmt.Printf("Skipping %s: conn_type or conn_uri must be specified.\n", conn.ConnID)
-			} else {
-				airflowCommand = fmt.Sprintf("%s %s \"%s\" ", baseAddCmd, connIDArg, conn.ConnID)
-				if objectValidator(0, conn.ConnType) {
-					airflowCommand += fmt.Sprintf("%s \"%s\" ", connTypeArg, conn.ConnType)
-				}
-				if objectValidator(0, conn.ConnURI) {
-					airflowCommand += fmt.Sprintf("%s '%s' ", connURIArg, conn.ConnURI)
-				}
-				if objectValidator(0, conn.ConnExtra) {
-					airflowCommand += fmt.Sprintf("%s '%s' ", connExtraArg, conn.ConnExtra)
-				}
-				if objectValidator(0, conn.ConnHost) {
-					airflowCommand += fmt.Sprintf("%s '%s' ", connHostArg, conn.ConnHost)
-				}
-				if objectValidator(0, conn.ConnLogin) {
-					airflowCommand += fmt.Sprintf("%s '%s' ", connLoginArg, conn.ConnLogin)
-				}
-				if objectValidator(0, conn.ConnPassword) {
-					airflowCommand += fmt.Sprintf("%s '%s' ", connPasswordArg, conn.ConnPassword)
-				}
-				if objectValidator(0, conn.ConnSchema) {
-					airflowCommand += fmt.Sprintf("%s '%s' ", connSchemaArg, conn.ConnSchema)
-				}
-				if conn.ConnPort != 0 {
-					airflowCommand += fmt.Sprintf("%s %v", connPortArg, conn.ConnPort)
-				}
-				docker.AirflowCommand(id, airflowCommand)
-				fmt.Printf("Added Connection: %s\n", conn.ConnID)
-			}
+	for idx := range connections {
+		conn := connections[idx]
+		if !objectValidator(0, conn.ConnID) {
+			continue
 		}
+
+		quotedConnID := "'" + conn.ConnID + "'"
+
+		if strings.Contains(out, quotedConnID) {
+			fmt.Printf("Found Connection: \"%s\"...replacing...\n", conn.ConnID)
+			airflowCommand = fmt.Sprintf("%s %s \"%s\"", baseRmCmd, connIDArg, conn.ConnID)
+			docker.AirflowCommand(id, airflowCommand)
+		}
+
+		if !objectValidator(1, conn.ConnType, conn.ConnURI) {
+			fmt.Printf("Skipping %s: conn_type or conn_uri must be specified.\n", conn.ConnID)
+			continue
+		}
+
+		airflowCommand = fmt.Sprintf("%s %s \"%s\" ", baseAddCmd, connIDArg, conn.ConnID)
+		if objectValidator(0, conn.ConnType) {
+			airflowCommand += fmt.Sprintf("%s \"%s\" ", connTypeArg, conn.ConnType)
+		}
+		if objectValidator(0, conn.ConnURI) {
+			airflowCommand += fmt.Sprintf("%s '%s' ", connURIArg, conn.ConnURI)
+		}
+		if objectValidator(0, conn.ConnExtra) {
+			airflowCommand += fmt.Sprintf("%s '%s' ", connExtraArg, conn.ConnExtra)
+		}
+		if objectValidator(0, conn.ConnHost) {
+			airflowCommand += fmt.Sprintf("%s '%s' ", connHostArg, conn.ConnHost)
+		}
+		if objectValidator(0, conn.ConnLogin) {
+			airflowCommand += fmt.Sprintf("%s '%s' ", connLoginArg, conn.ConnLogin)
+		}
+		if objectValidator(0, conn.ConnPassword) {
+			airflowCommand += fmt.Sprintf("%s '%s' ", connPasswordArg, conn.ConnPassword)
+		}
+		if objectValidator(0, conn.ConnSchema) {
+			airflowCommand += fmt.Sprintf("%s '%s' ", connSchemaArg, conn.ConnSchema)
+		}
+		if conn.ConnPort != 0 {
+			airflowCommand += fmt.Sprintf("%s %v", connPortArg, conn.ConnPort)
+		}
+		docker.AirflowCommand(id, airflowCommand)
+		fmt.Printf("Added Connection: %s\n", conn.ConnID)
 	}
 }
 

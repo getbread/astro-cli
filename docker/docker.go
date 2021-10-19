@@ -154,10 +154,16 @@ func ExecPipe(resp types.HijackedResponse, inStream io.Reader, outStream, errorS
 	stdinDone := make(chan struct{})
 	go func() {
 		if inStream != nil {
-			io.Copy(resp.Conn, inStream)
+			_, err := io.Copy(resp.Conn, inStream)
+			if err != nil {
+				log.Errorf("Error copying input stream: %s", err.Error())
+			}
 		}
 
-		resp.CloseWrite()
+		err := resp.CloseWrite()
+		if err != nil {
+			log.Errorf("Error closing response body: %s", err.Error())
+		}
 
 		close(stdinDone)
 	}()

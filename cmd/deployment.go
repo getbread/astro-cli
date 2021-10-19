@@ -5,13 +5,15 @@ import (
 	"io"
 	"strings"
 
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+
 	"github.com/astronomer/astro-cli/deployment"
 	"github.com/astronomer/astro-cli/houston"
 	"github.com/astronomer/astro-cli/messages"
 	"github.com/astronomer/astro-cli/pkg/input"
 	sa "github.com/astronomer/astro-cli/serviceaccount"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -99,7 +101,7 @@ func newDeploymentRootCmd(client *houston.Client, out io.Writer) *cobra.Command 
 		newDeploymentListCmd(client, out),
 		newDeploymentUpdateCmd(client, out),
 		newDeploymentDeleteCmd(client, out),
-		newLogsCmd(client, out),
+		newLogsCmd(),
 		newDeploymentSaRootCmd(client, out),
 		newDeploymentUserRootCmd(client, out),
 		newDeploymentAirflowRootCmd(client, out),
@@ -183,7 +185,7 @@ $ astro deployment update UUID label=Production-Airflow --dag-deployment-type=vo
 		Example: example,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				return errors.New("must specify a deployment ID and at least one attribute to update.")
+				return errors.New("must specify a deployment ID and at least one attribute to update")
 			}
 			return updateArgValidator(args[1:], deploymentUpdateAttrs)
 		},
@@ -239,6 +241,7 @@ func newDeploymentUserListCmd(client *houston.Client, out io.Writer) *cobra.Comm
 	return cmd
 }
 
+// nolint:dupl
 func newDeploymentUserAddCmd(client *houston.Client, out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "add EMAIL",
@@ -255,6 +258,7 @@ func newDeploymentUserAddCmd(client *houston.Client, out io.Writer) *cobra.Comma
 	return cmd
 }
 
+// nolint:dupl
 func newDeploymentUserDeleteCmd(client *houston.Client, out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "delete EMAIL",
@@ -270,6 +274,7 @@ func newDeploymentUserDeleteCmd(client *houston.Client, out io.Writer) *cobra.Co
 	return cmd
 }
 
+// nolint:dupl
 func newDeploymentUserUpdateCmd(client *houston.Client, out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "update EMAIL",
@@ -301,6 +306,7 @@ func newDeploymentSaRootCmd(client *houston.Client, out io.Writer) *cobra.Comman
 	return cmd
 }
 
+// nolint:dupl
 func newDeploymentSaCreateCmd(client *houston.Client, out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "create",
@@ -332,7 +338,10 @@ func newDeploymentSaGetCmd(client *houston.Client, out io.Writer) *cobra.Command
 		},
 	}
 	cmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "[ID]")
-	cmd.MarkFlagRequired("deployment-id")
+	err := cmd.MarkFlagRequired("deployment-id")
+	if err != nil {
+		log.Errorf("error adding deployment-id flag: %s", err.Error())
+	}
 	return cmd
 }
 
@@ -349,7 +358,10 @@ func newDeploymentSaDeleteCmd(client *houston.Client, out io.Writer) *cobra.Comm
 		Args: cobra.ExactArgs(1),
 	}
 	cmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "[ID]")
-	cmd.MarkFlagRequired("deployment-id")
+	err := cmd.MarkFlagRequired("deployment-id")
+	if err != nil {
+		log.Errorf("error adding deployment-id flag: %s", err.Error())
+	}
 	return cmd
 }
 
@@ -380,7 +392,10 @@ func newDeploymentAirflowUpgradeCmd(client *houston.Client, out io.Writer) *cobr
 	cmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "[ID]")
 	cmd.Flags().StringVarP(&desiredAirflowVersion, "desired-airflow-version", "v", "", "[DESIRED_AIRFLOW_VERSION]")
 	cmd.Flags().BoolVarP(&cancel, "cancel", "c", false, "Abort the initial airflow upgrade step")
-	cmd.MarkFlagRequired("deployment-id")
+	err := cmd.MarkFlagRequired("deployment-id")
+	if err != nil {
+		log.Errorf("error adding deployment-id flag: %s", err.Error())
+	}
 	return cmd
 }
 
@@ -418,7 +433,7 @@ func deploymentDelete(cmd *cobra.Command, args []string, client *houston.Client,
 	// Silence Usage as we have now validated command input
 	cmd.SilenceUsage = true
 	if hardDelete {
-		i, _ := input.InputConfirm(
+		i, _ := input.Confirm(
 			fmt.Sprintf(messages.CLIDeploymentHardDeletePrompt))
 
 		if !i {

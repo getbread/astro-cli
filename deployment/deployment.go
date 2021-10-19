@@ -17,6 +17,35 @@ import (
 	"github.com/fatih/camelcase"
 )
 
+var (
+	minAirflowVersion = "1.10.14"
+
+	celeryExecutor       = "CeleryExecutor"
+	volumeDeploymentType = "volume"
+
+	ErrKubernetesNamespaceNotAvailable = errors.New("no kubernetes namespaces are available")
+	ErrNumberOutOfRange                = errors.New("number is out of available range")
+	ErrMajorAirflowVersionUpgrade      = fmt.Errorf("Airflow 2.0 has breaking changes. To upgrade to Airflow 2.0, upgrade to %s first and make sure your DAGs and configs are 2.0 compatible", minAirflowVersion) //nolint:golint,stylecheck
+)
+
+type ErrParsingInt struct {
+	in string
+}
+
+func (e ErrParsingInt) Error() string {
+	return fmt.Sprintf("cannot parse %s to int", e.in)
+}
+
+type ErrInvalidAirflowVersion struct {
+	desiredVersion string
+	currentVersion *semver.Version
+}
+
+func (e ErrInvalidAirflowVersion) Error() string {
+	return fmt.Sprintf("Error: You tried to set --desired-airflow-version to %s, but this Airflow Deployment "+
+		"is already running %s. Please indicate a higher version of Airflow and try again.", e.desiredVersion, e.currentVersion)
+}
+
 func newTableOut() *printutil.Table {
 	return &printutil.Table{
 		Padding:        []int{30, 30, 10, 50, 10, 10},
@@ -126,7 +155,7 @@ func Create(label, ws, releaseName, cloudRole, executor, airflowVersion, dagDepl
 		vars["airflowVersion"] = airflowVersion
 	}
 
-	if dagDeploymentType == "volume" && nfsLocation != "" {
+	if dagDeploymentType == volumeDeploymentType && nfsLocation != "" {
 		vars["dagDeployment"] = map[string]string{"nfsLocation": nfsLocation, "type": dagDeploymentType}
 	}
 
@@ -154,24 +183,24 @@ func Create(label, ws, releaseName, cloudRole, executor, airflowVersion, dagDepl
 		splitted = camelcase.Split(executor)
 	}
 
-	var airflowUrl, flowerUrl string
+	var airflowURL, flowerURL string
 	for _, url := range r.Data.CreateDeployment.Urls {
 		if url.Type == "airflow" {
-			airflowUrl = url.URL
+			airflowURL = url.URL
 		}
 		if url.Type == "flower" {
-			flowerUrl = url.URL
+			flowerURL = url.URL
 		}
 	}
 
 	tab.SuccessMsg =
 		fmt.Sprintf("\n Successfully created deployment with %s executor", splitted[0]) +
 			". Deployment can be accessed at the following URLs \n" +
-			fmt.Sprintf("\n Airflow Dashboard: %s", airflowUrl)
+			fmt.Sprintf("\n Airflow Dashboard: %s", airflowURL)
 
 	// The Flower URL is specific to CeleryExecutor only
-	if executor == "CeleryExecutor" || executor == "" {
-		tab.SuccessMsg += fmt.Sprintf("\n Flower Dashboard: %s", flowerUrl)
+	if executor == celeryExecutor || executor == "" {
+		tab.SuccessMsg += fmt.Sprintf("\n Flower Dashboard: %s", flowerURL)
 	}
 	tab.Print(out)
 
@@ -200,7 +229,6 @@ func Delete(id string, hardDelete bool, client *houston.Client, out io.Writer) e
 
 // list all available namespaces
 func getDeploymentSelectionNamespaces(client *houston.Client, out io.Writer) (string, error) {
-
 	tab := &printutil.Table{
 		Padding:        []int{30},
 		DynamicPadding: true,
@@ -222,7 +250,7 @@ func getDeploymentSelectionNamespaces(client *houston.Client, out io.Writer) (st
 	names := r.Data.GetDeploymentNamespaces
 
 	if len(names) == 0 {
-		return "", errors.New("no kubernetes namespaces are available")
+		return "", ErrKubernetesNamespaceNotAvailable
 	}
 
 	for _, namespace := range names {
@@ -233,18 +261,13 @@ func getDeploymentSelectionNamespaces(client *houston.Client, out io.Writer) (st
 
 	tab.Print(out)
 
-	in := input.InputText("\n> ")
-	i, err := strconv.ParseInt(
-		in,
-		10,
-		64,
-	)
-
+	in := input.Text("\n> ")
+	i, err := strconv.ParseInt(in, 10, 64)
 	if err != nil {
-		return "", fmt.Errorf("cannot parse %s to int", in)
+		return "", ErrParsingInt{in: in}
 	}
 	if i > int64(len(names)) {
-		return "", errors.New("Number is out of available range")
+		return "", ErrNumberOutOfRange
 	}
 	return names[i-1].Name, nil
 }
@@ -279,11 +302,8 @@ func List(ws string, all bool, client *houston.Client, out io.Writer) error {
 	tab := newTableOut()
 
 	// Build rows
-	for _, d := range deployments {
-		if all {
-			ws = d.Workspace.ID
-		}
-
+	for i := range deployments {
+		d := deployments[i]
 		currentTag := d.DeploymentInfo.Current
 		if currentTag == "" {
 			currentTag = "?"
@@ -443,17 +463,17 @@ func getAirflowVersionSelection(airflowVersion string, client *houston.Client, o
 
 	t.Print(out)
 
-	in := input.InputText("\n> ")
-	i, err := strconv.ParseInt(
-		in,
-		10,
-		64,
-	)
+	in := input.Text("\n> ")
+	i, err := strconv.ParseInt(in, 10, 64)
+	if err != nil {
+		return "", err
+	}
+
 	return filteredVersions[i-1], nil
 }
 
-func getDeployment(deploymentId string, client *houston.Client) (*houston.Deployment, error) {
-	vars := map[string]interface{}{"id": deploymentId}
+func getDeployment(deploymentID string, client *houston.Client) (*houston.Deployment, error) {
+	vars := map[string]interface{}{"id": deploymentID}
 
 	req := houston.Request{
 		Query:     houston.DeploymentGetRequest,
@@ -468,9 +488,9 @@ func getDeployment(deploymentId string, client *houston.Client) (*houston.Deploy
 	return &r.Data.GetDeployment, nil
 }
 
-func meetsAirflowUpgradeReqs(airflowVersion string, desiredAirflowVersion string) error {
+func meetsAirflowUpgradeReqs(airflowVersion, desiredAirflowVersion string) error {
 	upgradeVersion := strconv.FormatUint(settings.AirflowVersionTwo, 10)
-	minRequiredVersion := "1.10.14"
+	minRequiredVersion := minAirflowVersion
 	airflowUpgradeVersion, err := semver.NewVersion(upgradeVersion)
 	if err != nil {
 		return err
@@ -487,9 +507,7 @@ func meetsAirflowUpgradeReqs(airflowVersion string, desiredAirflowVersion string
 	}
 
 	if currentVersion.Compare(desiredVersion) == 0 {
-		errorMessage := fmt.Sprintf("Error: You tried to set --desired-airflow-version to %s, but this Airflow Deployment "+
-			"is already running %s. Please indicate a higher version of Airflow and try again.", desiredVersion, currentVersion)
-		return errors.New(errorMessage)
+		return ErrInvalidAirflowVersion{desiredVersion: desiredAirflowVersion, currentVersion: currentVersion}
 	}
 
 	if airflowUpgradeVersion.Compare(desiredVersion) < 1 {
@@ -499,9 +517,7 @@ func meetsAirflowUpgradeReqs(airflowVersion string, desiredAirflowVersion string
 		}
 
 		if currentVersion.Compare(minUpgrade) < 0 {
-			errorMessage := fmt.Sprintf("Airflow 2.0 has breaking changes. To upgrade to Airflow 2.0, upgrade to %s first "+
-				"and make sure your DAGs and configs are 2.0 compatible.", minRequiredVersion)
-			return errors.New(errorMessage)
+			return ErrMajorAirflowVersionUpgrade
 		}
 	}
 

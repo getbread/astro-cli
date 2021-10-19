@@ -44,9 +44,11 @@ type Response struct {
 	} `json:"data"`
 	Errors []Error `json:"errors,omitempty"`
 }
+
 type Namespace struct {
 	Name string `json:"name"`
 }
+
 type AuthProvider struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
@@ -285,6 +287,7 @@ type AppConfig struct {
 	TriggererEnabled       bool         `json:"triggererEnabled"`
 	Flags                  FeatureFlags `json:"featureFlags,omitempty"`
 }
+
 type FeatureFlags struct {
 	NfsMountDagDeployment bool `json:"nfsMountDagDeployment"`
 	HardDeleteDeployment  bool `json:"hardDeleteDeployment"`

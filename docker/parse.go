@@ -44,7 +44,7 @@ func (e ParseError) Error() string {
 
 // List all legal cmds in a dockerfile
 func AllCmds() []string {
-	var ret []string
+	ret := make([]string, 0, len(command.Commands))
 	for k := range command.Commands {
 		ret = append(ret, k)
 	}
@@ -59,7 +59,7 @@ func ParseReader(file io.Reader) ([]Command, error) {
 		return nil, ParseError{err.Error()}
 	}
 
-	var ret []Command
+	ret := make([]Command, 0, len(res.AST.Children))
 	for _, child := range res.AST.Children {
 		cmd := Command{
 			Cmd:       child.Value,

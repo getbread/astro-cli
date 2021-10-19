@@ -12,6 +12,12 @@ import (
 
 var (
 	ErrInvalidConfigNoDomain = errors.New("cluster config invalid, no domain specified")
+	ErrContextNotSet         = errors.New("no context set, have you authenticated to a cluster")
+	ErrClusterNotSet         = errors.New("cluster not set, have you authenticated to this cluster")
+
+	localhostDomain = "localhost"
+	houstonDomain   = "houston"
+	naClusterDomain = "N/A"
 )
 
 // newTableOut construct new printutil.Table
@@ -41,7 +47,7 @@ func GetCurrentContext() (Context, error) {
 
 	domain := CFG.Context.GetHomeString()
 	if domain == "" {
-		return Context{}, errors.New("No context set, have you authenticated to a cluster?")
+		return Context{}, ErrContextNotSet
 	}
 
 	c.Domain = domain
@@ -58,12 +64,12 @@ func (c Context) PrintContext(out io.Writer) error {
 
 	cluster := c.Domain
 	if cluster == "" {
-		cluster = "N/A"
+		cluster = naClusterDomain
 	}
 
 	workspace := c.Workspace
 	if workspace == "" {
-		workspace = "N/A"
+		workspace = naClusterDomain
 	}
 	tab := newTableOut()
 	tab.AddRow([]string{cluster, workspace}, false)
@@ -118,7 +124,7 @@ func (c Context) GetContext() (Context, error) {
 	}
 
 	if !c.ContextExists() {
-		return c, errors.New("Cluster not set, have you authenticated to this cluster?")
+		return c, ErrClusterNotSet
 	}
 
 	err = viperHome.UnmarshalKey("contexts"+"."+key, &c)
@@ -154,9 +160,8 @@ func (c Context) SetContext() error {
 	}
 
 	viperHome.Set("contexts"+"."+key, context)
-	saveConfig(viperHome, HomeConfigFile)
-
-	return nil
+	err = saveConfig(viperHome, HomeConfigFile)
+	return err
 }
 
 // SetContextKey saves a single context key value pair
@@ -168,9 +173,8 @@ func (c Context) SetContextKey(key, value string) error {
 
 	cfgPath := fmt.Sprintf("contexts.%s.%s", cKey, key)
 	viperHome.Set(cfgPath, value)
-	saveConfig(viperHome, HomeConfigFile)
-
-	return nil
+	err = saveConfig(viperHome, HomeConfigFile)
+	return err
 }
 
 // SwitchContext sets the current config context to the one matching the provided Context struct
@@ -181,7 +185,9 @@ func (c Context) SwitchContext() error {
 	}
 
 	viperHome.Set("context", c.Domain)
-	saveConfig(viperHome, HomeConfigFile)
+	if err := saveConfig(viperHome, HomeConfigFile); err != nil {
+		return err
+	}
 
 	tab := newTableOut()
 	tab.AddRow([]string{co.Domain, co.Workspace}, false)
@@ -193,7 +199,7 @@ func (c Context) SwitchContext() error {
 
 // GetAPIURL returns full Houston API Url for the provided Context
 func (c Context) GetAPIURL() string {
-	if c.Domain == "localhost" || c.Domain == "houston" {
+	if c.Domain == localhostDomain || c.Domain == houstonDomain {
 		return CFG.LocalHouston.GetString()
 	}
 
@@ -207,7 +213,7 @@ func (c Context) GetAPIURL() string {
 
 // GetWebsocketURL returns full Houston websocket Url for the provided Context
 func (c Context) GetWebsocketURL() string {
-	if c.Domain == "localhost" || c.Domain == "houston" {
+	if c.Domain == localhostDomain || c.Domain == houstonDomain {
 		return CFG.LocalHouston.GetString()
 	}
 
@@ -221,7 +227,7 @@ func (c Context) GetWebsocketURL() string {
 
 // GetAppURL returns full Houston API Url for the provided Context
 func (c Context) GetAppURL() string {
-	if c.Domain == "localhost" || c.Domain == "houston" {
+	if c.Domain == localhostDomain || c.Domain == houstonDomain {
 		return CFG.LocalOrbit.GetString()
 	}
 

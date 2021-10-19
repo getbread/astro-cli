@@ -56,7 +56,10 @@ func deploy(cmd *cobra.Command, args []string) error {
 
 	// Save release name in config if specified
 	if len(releaseName) > 0 && saveDeployConfig {
-		config.CFG.ProjectDeployment.SetProjectString(releaseName)
+		err = config.CFG.ProjectDeployment.SetProjectString(releaseName)
+		if err != nil {
+			return err
+		}
 	}
 
 	if git.HasUncommittedChanges() && !forceDeploy {

@@ -18,7 +18,7 @@ import (
 // basicAuth handles authentication with the houston api
 func basicAuth(username, password string) (string, error) {
 	if password == "" {
-		password, _ = input.InputPassword(messages.InputPassword)
+		password, _ = input.Password(messages.InputPassword)
 	}
 
 	req := houston.Request{
@@ -36,9 +36,12 @@ func basicAuth(username, password string) (string, error) {
 
 func switchToLastUsedWorkspace(c config.Context, workspaces []houston.Workspace) bool {
 	if c.LastUsedWorkspace != "" {
-		for _, w := range workspaces {
+		for i := range workspaces {
+			w := workspaces[i]
 			if c.LastUsedWorkspace == w.ID {
-				c.SetContextKey("workspace", w.ID)
+				if err := c.SetContextKey("workspace", w.ID); err != nil {
+					log.Errorf("Error setting workspace context key: %s", err.Error())
+				}
 				return true
 			}
 		}
@@ -50,7 +53,7 @@ func switchToLastUsedWorkspace(c config.Context, workspaces []houston.Workspace)
 func oAuth(oAuthURL string) string {
 	fmt.Println("\n" + messages.HoustonOAuthRedirect)
 	fmt.Println(oAuthURL + "\n")
-	return input.InputText(messages.InputOAuthToken)
+	return input.Text(messages.InputOAuthToken)
 }
 
 // registryAuth authenticates with the private registry
@@ -81,22 +84,10 @@ func Login(domain string, oAuthOnly bool, username, password string, client *hou
 	var token string
 	var err error
 
-	// If no domain specified
-	// Create cluster if it does not exist
-	if domain != "" {
-		if !cluster.Exists(domain) {
-			// Save new cluster since it did not exists
-			err = cluster.SetCluster(domain)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Switch cluster now that we ensured cluster exists
-		err = cluster.Switch(domain)
-		if err != nil {
-			return err
-		}
+	// create cluster if no domain specified, else switch cluster
+	err = checkClusterDomain(domain)
+	if err != nil {
+		return err
 	}
 
 	c, err := cluster.GetCurrentCluster()
@@ -115,27 +106,18 @@ func Login(domain string, oAuthOnly bool, username, password string, client *hou
 	authConfig := acResp.Data.GetAuthConfig
 
 	if username == "" && !oAuthOnly && authConfig.LocalEnabled {
-		username = input.InputText(messages.InputUsername)
+		username = input.Text(messages.InputUsername)
 	}
 
-	if username == "" {
-		if len(authConfig.AuthProviders) > 0 {
-			token = oAuth(c.GetAppURL() + "/token")
-		} else {
-			return errors.New("cannot authenticate, oauth is disabled")
-		}
-	} else {
-		if authConfig.LocalEnabled {
-			token, err = basicAuth(username, password)
-			if err != nil {
-				return errors.Wrap(err, "local auth login failed")
-			}
-		} else {
-			fmt.Println(messages.HoustonBasicAuthDisabled)
-		}
+	token, err = getAuthToken(username, password, authConfig, c)
+	if err != nil {
+		return err
 	}
 
-	c.SetContextKey("token", token)
+	err = c.SetContextKey("token", token)
+	if err != nil {
+		return err
+	}
 
 	wsReq := houston.Request{
 		Query: houston.WorkspacesGetRequest,
@@ -150,9 +132,15 @@ func Login(domain string, oAuthOnly bool, username, password string, client *hou
 
 	if len(workspaces) == 1 {
 		w := workspaces[0]
-		c.SetContextKey("workspace", w.ID)
+		err = c.SetContextKey("workspace", w.ID)
+		if err != nil {
+			return err
+		}
 		// update last used workspace ID
-		c.SetContextKey("last_used_workspace", w.ID)
+		err = c.SetContextKey("last_used_workspace", w.ID)
+		if err != nil {
+			return err
+		}
 		fmt.Printf(messages.ConfigSetDefaultWorkspace, w.Label, w.ID)
 	}
 
@@ -184,5 +172,48 @@ func Login(domain string, oAuthOnly bool, username, password string, client *hou
 func Logout(domain string) {
 	c, _ := cluster.GetCluster(domain)
 
-	c.SetContextKey("token", "")
+	_ = c.SetContextKey("token", "")
+}
+
+func checkClusterDomain(domain string) error {
+	// If no domain specified
+	// Create cluster if it does not exist
+	if domain != "" {
+		if !cluster.Exists(domain) {
+			// Save new cluster since it did not exists
+			err := cluster.SetCluster(domain)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Switch cluster now that we ensured cluster exists
+		err := cluster.Switch(domain)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getAuthToken(username, password string, authConfig *houston.AuthConfig, context config.Context) (string, error) {
+	var token string
+	var err error
+	if username == "" {
+		if len(authConfig.AuthProviders) > 0 {
+			token = oAuth(context.GetAppURL() + "/token")
+		} else {
+			return "", errors.New("cannot authenticate, oauth is disabled")
+		}
+	} else {
+		if authConfig.LocalEnabled {
+			token, err = basicAuth(username, password)
+			if err != nil {
+				return "", errors.Wrap(err, "local auth login failed")
+			}
+		} else {
+			fmt.Println(messages.HoustonBasicAuthDisabled)
+		}
+	}
+	return token, nil
 }

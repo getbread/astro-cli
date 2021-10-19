@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	filesystem "io/fs"
 	"os"
 	"path/filepath"
 
@@ -10,6 +11,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
+)
+
+const (
+	defaultDirPerm filesystem.FileMode = 0o770
+	newFilePerm    filesystem.FileMode = 0o600
 )
 
 var (
@@ -156,7 +162,7 @@ func configExists(v *viper.Viper) bool {
 
 // CreateConfig creates a config file in the given directory
 func CreateConfig(v *viper.Viper, path, file string) error {
-	err := os.MkdirAll(path, 0770)
+	err := os.MkdirAll(path, defaultDirPerm)
 	if err != nil {
 		return errors.Wrap(err, messages.ErrConfigDirCreation)
 	}
@@ -165,7 +171,9 @@ func CreateConfig(v *viper.Viper, path, file string) error {
 	if err != nil {
 		return errors.Wrap(err, messages.ErrConfigFileCreation)
 	}
-	os.Chmod(file, 0600)
+	if err = os.Chmod(file, newFilePerm); err != nil {
+		return errors.Wrap(err, messages.ErrConfigFileCreation)
+	}
 
 	return saveConfig(v, file)
 }

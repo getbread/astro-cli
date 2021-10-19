@@ -1,6 +1,7 @@
 package testing
 
 import (
+	filesystem "io/fs"
 	"net/http"
 	"os"
 	"strings"
@@ -8,6 +9,10 @@ import (
 	"github.com/astronomer/astro-cli/config"
 	"github.com/astronomer/astro-cli/pkg/httputil"
 	"github.com/spf13/afero"
+)
+
+const (
+	defaultFilePerm filesystem.FileMode = 0o777
 )
 
 // RoundTripFunc
@@ -58,7 +63,7 @@ func InitTestConfig() {
 	// fake filesystem
 	fs := afero.NewMemMapFs()
 	configYaml := NewTestConfig()
-	err := afero.WriteFile(fs, config.HomeConfigFile, []byte(configYaml), 0777)
+	err := afero.WriteFile(fs, config.HomeConfigFile, configYaml, defaultFilePerm)
 	config.InitConfig(fs)
 	if err != nil {
 		panic(err)

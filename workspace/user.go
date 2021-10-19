@@ -77,7 +77,8 @@ func ListRoles(workspaceID string, client *houston.Client, out io.Writer) error 
 		DynamicPadding: true,
 		Header:         []string{"USERNAME", "ID", "ROLE"},
 	}
-	for _, role := range workspace.RoleBindings {
+	for i := range workspace.RoleBindings {
+		role := workspace.RoleBindings[i]
 		var color bool
 		tab.AddRow([]string{role.User.Username, role.User.ID, role.Role}, color)
 	}
@@ -103,7 +104,7 @@ func UpdateRole(workspaceID, email, role string, client *houston.Client, out io.
 	}
 	// check if rolebinding is an empty structure
 	if (rb == houston.RoleBindingWorkspace{}) {
-		return errors.New("The user you are trying to change is not part of this workspace")
+		return errors.New("the user you are trying to change is not part of this workspace")
 	}
 
 	req := houston.Request{
@@ -120,7 +121,7 @@ func UpdateRole(workspaceID, email, role string, client *houston.Client, out io.
 	return nil
 }
 
-func getUserRole(workspaceID, email string, client *houston.Client, out io.Writer) (workspaceUserRolebindings houston.WorkspaceUserRoleBindings, err error) {
+func getUserRole(workspaceID, email string, client *houston.Client, _ io.Writer) (workspaceUserRolebindings houston.WorkspaceUserRoleBindings, err error) {
 	req := houston.Request{
 		Query:     houston.WorkspaceGetUserRequest,
 		Variables: map[string]interface{}{"workspaceUuid": workspaceID, "email": email},

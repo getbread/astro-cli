@@ -2,6 +2,7 @@ package airflow
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -9,6 +10,10 @@ import (
 
 	"github.com/astronomer/astro-cli/airflow/include"
 	"github.com/astronomer/astro-cli/pkg/fileutil"
+)
+
+const (
+	defaultDirPerm fs.FileMode = 0o777
 )
 
 func initDirs(root string, dirs []string) error {
@@ -24,7 +29,7 @@ func initDirs(root string, dirs []string) error {
 		}
 
 		// Create directory
-		if err := os.MkdirAll(fullpath, 0777); err != nil {
+		if err := os.MkdirAll(fullpath, defaultDirPerm); err != nil {
 			return errors.Wrapf(err, "failed to create dir '%s'", dir)
 		}
 	}

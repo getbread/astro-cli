@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ErrInaptPermissions        = errors.New("You do not have the appropriate permissions for that")
-	ErrVerboseInaptPermissions = errors.New("You do not have the appropriate permissions for that: Your token has expired. Please log in again.")
+	ErrInaptPermissions        = errors.New("you do not have the appropriate permissions for that")
+	ErrVerboseInaptPermissions = errors.New("you do not have the appropriate permissions for that: Your token has expired. Please log in again")
 )
 
 // Client containers the logger and HTTPClient used to communicate with the HoustonAPI

@@ -12,19 +12,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func executeCommandC(client *houston.Client, args ...string) (c *cobra.Command, output string, err error) {
+func executeCommandC(client *houston.Client, args ...string) (output string, err error) {
 	buf := new(bytes.Buffer)
 	rootCmd := NewRootCmd(client, buf)
 	rootCmd.SetOut(buf)
 	rootCmd.SetArgs(args)
-	c, err = rootCmd.ExecuteC()
+	_, err = rootCmd.ExecuteC()
 	client.HTTPClient.HTTPClient.CloseIdleConnections()
-	return c, buf.String(), err
+	return buf.String(), err
 }
 
 func executeCommand(args ...string) (output string, err error) {
 	client := houston.NewHoustonClient(httputil.NewHTTPClient())
-	_, output, err = executeCommandC(client, args...)
+	output, err = executeCommandC(client, args...)
 	return output, err
 }
 

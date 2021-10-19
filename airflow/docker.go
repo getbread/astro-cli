@@ -3,6 +3,8 @@ package airflow
 import (
 	"bytes"
 	"context"
+
+	// #nosec
 	"crypto/md5"
 	"fmt"
 	"html/template"
@@ -38,7 +40,21 @@ import (
 const (
 	componentName = "airflow"
 	dockerStateUp = "Up"
+
+	projecStopTimeout = 5
+	tabWidth          = 8
+	tabPadding        = 2
+
+	defaultAirflowVersion = uint64(0x1) //nolint
 )
+
+type ErrWorkspaceNotFound struct {
+	workspaceID string
+}
+
+func (e ErrWorkspaceNotFound) Error() string {
+	return fmt.Sprintf("no workspaces with id (%s) found", e.workspaceID)
+}
 
 var tab = printutil.Table{
 	Padding:        []int{5, 30, 30, 50},
@@ -71,6 +87,7 @@ func projectNameUnique() (string, error) {
 		return "", errors.Wrap(err, "error retrieving working directory")
 	}
 
+	// #nosec
 	b := md5.Sum([]byte(pwd))
 	s := fmt.Sprintf("%x", b[:])
 
@@ -90,7 +107,9 @@ func imageName(name, tag string) string {
 // imageBuild builds the airflow project
 func imageBuild(path, imageName string) error {
 	// Change to location of Dockerfile
-	os.Chdir(path)
+	if err := os.Chdir(path); err != nil {
+		return errors.Wrapf(err, "error changing the current directory: %s", path)
+	}
 
 	// Build image
 	err := docker.Exec("build", "-t", imageName, ".")
@@ -184,7 +203,8 @@ func createProject(projectName, airflowHome, envFile string) (p.APIProject, erro
 
 // Find deployment name in deployments slice
 func deploymentNameExists(name string, deployments []houston.Deployment) bool {
-	for _, deployment := range deployments {
+	for idx := range deployments {
+		deployment := deployments[idx]
 		if deployment.ReleaseName == name {
 			return true
 		}
@@ -353,7 +373,7 @@ func Stop(airflowHome string) error {
 	}
 
 	// Pause our project
-	err = project.Stop(context.Background(), 5)
+	err = project.Stop(context.Background(), projecStopTimeout)
 	if err != nil {
 		return errors.Wrap(err, messages.ErrComposePause)
 	}
@@ -386,7 +406,7 @@ func PS(airflowHome string) error {
 
 	// Create a new tabwriter
 	tw := new(tabwriter.Writer)
-	tw.Init(os.Stdout, 0, 8, 2, '\t', tabwriter.AlignRight)
+	tw.Init(os.Stdout, 0, tabWidth, tabPadding, '\t', tabwriter.AlignRight)
 
 	// Append data to table
 	fmt.Fprintln(tw, strings.Join(infoColumns, "\t"))
@@ -470,32 +490,15 @@ func Run(airflowHome string, args []string, user string) error {
 }
 
 // Deploy pushes a new docker image
-func Deploy(path, name, wsId string, prompt bool) error {
-	if wsId == "" {
+func Deploy(path, name, wsID string, prompt bool) error {
+	if wsID == "" {
 		return errors.New("no workspace id provided")
 	}
 
 	// Validate workspace
-	wsReq := houston.Request{
-		Query:     houston.WorkspacesGetRequest,
-		Variables: map[string]interface{}{"workspaceId": wsId},
-	}
-
-	wsResp, err := wsReq.Do()
+	currentWorkspace, err := validateWorkspace(wsID)
 	if err != nil {
 		return err
-	}
-
-	if len(wsResp.Data.GetWorkspaces) == 0 {
-		return fmt.Errorf("no workspaces with id (%s) found", wsId)
-	}
-
-	var currentWorkspace houston.Workspace
-	for _, workspace := range wsResp.Data.GetWorkspaces {
-		if workspace.ID == wsId {
-			currentWorkspace = workspace
-			break
-		}
 	}
 
 	// Get Deployments from workspace ID
@@ -518,7 +521,7 @@ func Deploy(path, name, wsId string, prompt bool) error {
 
 	cloudDomain := c.Domain
 	if cloudDomain == "" {
-		return errors.New("No domain set, re-authenticate.")
+		return errors.New("no domain set, re-authenticate")
 	}
 
 	// Use config deployment if provided
@@ -540,7 +543,8 @@ func Deploy(path, name, wsId string, prompt bool) error {
 		fmt.Println(messages.HoustonSelectDeploymentPrompt)
 
 		deployMap := map[string]houston.Deployment{}
-		for i, d := range deployments {
+		for i := range deployments {
+			d := deployments[i]
 			index := i + 1
 			tab.AddRow([]string{strconv.Itoa(index), d.Label, d.ReleaseName, currentWorkspace.Label, d.ID}, false)
 
@@ -548,7 +552,7 @@ func Deploy(path, name, wsId string, prompt bool) error {
 		}
 
 		tab.Print(os.Stdout)
-		choice := input.InputText("\n> ")
+		choice := input.Text("\n> ")
 		selected, ok := deployMap[choice]
 		if !ok {
 			return errors.New(messages.HoustonInvalidDeploymentKey)
@@ -557,7 +561,8 @@ func Deploy(path, name, wsId string, prompt bool) error {
 	}
 
 	nextTag := ""
-	for _, deployment := range deployments {
+	for i := range deployments {
+		deployment := deployments[i]
 		if deployment.ReleaseName == name {
 			nextTag = deployment.DeploymentInfo.NextCli
 		}
@@ -567,6 +572,43 @@ func Deploy(path, name, wsId string, prompt bool) error {
 	fmt.Println(repositoryName(name))
 
 	// Build the image to deploy
+	err = buildPushDockerImage(c, name, path, nextTag, cloudDomain)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Successfully pushed Docker image to Astronomer registry. Navigate to the Astronomer UI for confirmation that your deploy was successful.")
+
+	return nil
+}
+
+func validateWorkspace(wsID string) (houston.Workspace, error) {
+	var currentWorkspace houston.Workspace
+
+	wsReq := houston.Request{
+		Query:     houston.WorkspacesGetRequest,
+		Variables: map[string]interface{}{"workspaceId": wsID},
+	}
+
+	wsResp, err := wsReq.Do()
+	if err != nil {
+		return currentWorkspace, err
+	}
+
+	if len(wsResp.Data.GetWorkspaces) == 0 {
+		return currentWorkspace, ErrWorkspaceNotFound{workspaceID: wsID}
+	}
+
+	for i := range wsResp.Data.GetWorkspaces {
+		workspace := wsResp.Data.GetWorkspaces[i]
+		if workspace.ID == wsID {
+			currentWorkspace = workspace
+			break
+		}
+	}
+	return currentWorkspace, nil
+}
+
+func buildPushDockerImage(c config.Context, name, path, nextTag, cloudDomain string) error {
 	// We use latest and keep this tag around after deployments to keep subsequent deploys quick
 	deployImage := imageName(name, "latest")
 
@@ -581,7 +623,7 @@ func Deploy(path, name, wsId string, prompt bool) error {
 
 	image, tag := docker.GetImageTagFromParsedFile(cmds)
 	if config.CFG.ShowWarnings.GetBool() && !validImageRepo(image) {
-		i, _ := input.InputConfirm(fmt.Sprintf(messages.WarningInvalidImageName, image))
+		i, _ := input.Confirm(fmt.Sprintf(messages.WarningInvalidImageName, image))
 		if !i {
 			fmt.Println("Canceling deploy...")
 			os.Exit(1)
@@ -600,7 +642,7 @@ func Deploy(path, name, wsId string, prompt bool) error {
 
 	if config.CFG.ShowWarnings.GetBool() && !diResp.Data.DeploymentConfig.IsValidTag(tag) {
 		validTags := strings.Join(diResp.Data.DeploymentConfig.GetValidTags(tag), ", ")
-		i, _ := input.InputConfirm(fmt.Sprintf(messages.WarningInvalidNameTag, tag, validTags))
+		i, _ := input.Confirm(fmt.Sprintf(messages.WarningInvalidNameTag, tag, validTags))
 		if !i {
 			fmt.Println("Canceling deploy...")
 			os.Exit(1)
@@ -634,9 +676,6 @@ func Deploy(path, name, wsId string, prompt bool) error {
 	if err != nil {
 		return errors.Wrapf(err, "command 'docker rmi %s' failed", remoteImage)
 	}
-
-	fmt.Println("Successfully pushed Docker image to Astronomer registry. Navigate to the Astronomer UI for confirmation that your deploy was successful.")
-
 	return nil
 }
 
@@ -663,7 +702,7 @@ func airflowVersionFromDockerFile(airflowHome, dockerfile string) (uint64, error
 
 	semVer, err := semver.NewVersion(airflowTag)
 	if err != nil {
-		return uint64(0x1), nil // Default to Airflow 1 if the user has a custom image without a semVer tag
+		return defaultAirflowVersion, nil // Default to Airflow 1 if the user has a custom image without a semVer tag
 	}
 
 	return semVer.Major(), nil

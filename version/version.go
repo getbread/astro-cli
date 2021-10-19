@@ -68,16 +68,12 @@ func CheckForUpdate(client *houston.Client, ghc *github.Client, out io.Writer) e
 	fmt.Fprintf(out, messages.CLILatestVersionDate+"\n", latestTag, latestPub)
 
 	printServerVersion(client, out)
-	compareVersions(latestTag, currentTag, out)
-
-	return nil
+	err = compareVersions(latestTag, currentTag, out)
+	return err
 }
 
 func isValidVersion(version string) bool {
-	if version == "" {
-		return false
-	}
-	return true
+	return version != ""
 }
 
 // printServerVersion outputs current server version
@@ -90,6 +86,4 @@ func printServerVersion(client *houston.Client, out io.Writer) {
 	if appCfg != nil {
 		fmt.Fprintf(out, messages.HoustonCurrentVersion+"\n", appCfg.Version)
 	}
-
-	return
 }

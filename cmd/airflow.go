@@ -283,11 +283,11 @@ func airflowInit(cmd *cobra.Command, _ []string, client *houston.Client, out io.
 
 	emtpyDir := fileutil.IsEmptyDir(config.WorkingPath)
 	if !emtpyDir {
-		i, _ := input.InputConfirm(
+		i, _ := input.Confirm(
 			fmt.Sprintf("%s \nYou are not in an empty directory. Are you sure you want to initialize a project?", config.WorkingPath))
 
 		if !i {
-			fmt.Println("Cancelling project initialization...")
+			fmt.Println("Canceling project initialization...")
 			os.Exit(1)
 		}
 	}
@@ -295,8 +295,10 @@ func airflowInit(cmd *cobra.Command, _ []string, client *houston.Client, out io.
 	if !exists {
 		config.CreateProjectConfig(config.WorkingPath)
 	}
-	config.CFG.ProjectName.SetProjectString(projectName)
-
+	err = config.CFG.ProjectName.SetProjectString(projectName)
+	if err != nil {
+		return err
+	}
 	// Silence Usage as we have now validated command input
 	cmd.SilenceUsage = true
 

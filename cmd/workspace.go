@@ -111,7 +111,7 @@ func newWorkspaceUpdateCmd(client *houston.Client, out io.Writer) *cobra.Command
 		Long:    "Update a Workspace name, as well as users and roles assigned to a Workspace",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) <= 1 {
-				return errors.New("must specify a workspace ID and at least one attribute to update.")
+				return errors.New("must specify a workspace ID and at least one attribute to update")
 			}
 			return updateArgValidator(args[1:], workspaceUpdateAttrs)
 		},
@@ -208,6 +208,7 @@ func newWorkspaceSaRootCmd(client *houston.Client, out io.Writer) *cobra.Command
 	return cmd
 }
 
+// nolint:dupl
 func newWorkspaceSaCreateCmd(client *houston.Client, out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "create",
@@ -239,7 +240,7 @@ func newWorkspaceSaGetCmd(client *houston.Client, out io.Writer) *cobra.Command 
 		},
 	}
 	cmd.Flags().StringVarP(&workspaceID, "workspace-id", "w", "", "[ID]")
-	cmd.MarkFlagRequired("workspace-id")
+	_ = cmd.MarkFlagRequired("workspace-id")
 	return cmd
 }
 
@@ -255,7 +256,7 @@ func newWorkspaceSaDeleteCmd(client *houston.Client, out io.Writer) *cobra.Comma
 		Args: cobra.ExactArgs(1),
 	}
 	cmd.Flags().StringVarP(&workspaceID, "workspace-id", "w", "", "[ID]")
-	cmd.MarkFlagRequired("workspace-id")
+	_ = cmd.MarkFlagRequired("workspace-id")
 	return cmd
 }
 

@@ -61,12 +61,14 @@ var (
 	HoustonSelectDeploymentPrompt = "Select which airflow deployment you want to deploy to:"
 	HoustonOAuthRedirect          = "Please visit the following URL, authenticate and paste token in next prompt\n"
 	HoustonInvalidDeploymentKey   = "Invalid deployment selection\n"
+
 	// TODO: @adam2k remove this message once the Houston API work is completed that will surface a similar error message
+
 	HoustonInvalidDeploymentUsers = "No users were found for this deployment.  Check the deploymentId and try again.\n"
 
 	InputPassword   = "Password: "
 	InputUsername   = "Username (leave blank for oAuth): "
-	InputOAuthToken = "oAuth Token: "
+	InputOAuthToken = "oAuth Token: " // nolint:gosec // false positive
 
 	RegistryAuthSuccess        = "Successfully authenticated to %s\n"
 	RegistryAuthFail           = "\nFailed to authenticate to the registry. Do you have Docker running?\nYou will not be able to push new images to your Airflow Deployment unless Docker is running.\nIf Docker is running and you are seeing this message, the registry is down or cannot be reached.\n"

@@ -59,7 +59,8 @@ func List(client *houston.Client, out io.Writer) error {
 
 	c, _ := config.GetCurrentContext()
 	tab := newTableOut()
-	for _, w := range ws {
+	for i := range ws {
+		w := ws[i]
 		name := w.Label
 		workspace := w.ID
 
@@ -108,7 +109,7 @@ func GetCurrentWorkspace() (string, error) {
 	}
 
 	if c.Workspace == "" {
-		return "", errors.New("Current workspace context not set, you can switch to a workspace with \n\tastro workspace switch WORKSPACEID")
+		return "", errors.New("current workspace context not set, you can switch to a workspace with \n\tastro workspace switch WORKSPACEID")
 	}
 
 	return c.Workspace, nil
@@ -130,8 +131,12 @@ func getWorkspaceSelection(client *houston.Client, out io.Writer) (string, error
 	ws := r.Data.GetWorkspaces
 
 	c, err := config.GetCurrentContext()
+	if err != nil {
+		return "", err
+	}
 
-	for _, w := range ws {
+	for i := range ws {
+		w := ws[i]
 		name := w.Label
 		workspace := w.ID
 
@@ -147,12 +152,8 @@ func getWorkspaceSelection(client *houston.Client, out io.Writer) (string, error
 
 	tab.Print(out)
 
-	in := input.InputText("\n> ")
-	i, err := strconv.ParseInt(
-		in,
-		10,
-		64,
-	)
+	in := input.Text("\n> ")
+	i, err := strconv.ParseInt(in, 10, 64)
 	if err != nil {
 		return "", errors.Wrapf(err, "cannot parse %s to int", in)
 	}
@@ -192,9 +193,8 @@ func Switch(id string, client *houston.Client, out io.Writer) error {
 		return err
 	}
 
-	config.PrintCurrentContext(out)
-
-	return nil
+	err = config.PrintCurrentContext(out)
+	return err
 }
 
 // Update an astronomer workspace

@@ -1,5 +1,12 @@
 package config
 
+import "errors"
+
+var (
+	ErrHomeConfigNotFound    = errors.New("home config doesn't exists")
+	ErrProjectConfigNotFound = errors.New("project config doesn't exists")
+)
+
 // cfg defines settings a single configuration setting can have
 type cfg struct {
 	Path    string
@@ -39,21 +46,23 @@ func newCfg(path, dflt string) cfg {
 }
 
 // SetHomeString sets a string value in home config
-func (c cfg) SetHomeString(value string) {
+func (c cfg) SetHomeString(value string) error {
 	if !configExists(viperHome) {
-		return
+		return ErrHomeConfigNotFound
 	}
 	viperHome.Set(c.Path, value)
-	saveConfig(viperHome, HomeConfigFile)
+	err := saveConfig(viperHome, HomeConfigFile)
+	return err
 }
 
 // SetProjectString sets a string value in project config
-func (c cfg) SetProjectString(value string) {
+func (c cfg) SetProjectString(value string) error {
 	if !configExists(viperProject) {
-		return
+		return ErrProjectConfigNotFound
 	}
 	viperProject.Set(c.Path, value)
-	saveConfig(viperProject, viperProject.ConfigFileUsed())
+	err := saveConfig(viperProject, viperProject.ConfigFileUsed())
+	return err
 }
 
 // GetString will return the requested config, check working dir and fallback to home
