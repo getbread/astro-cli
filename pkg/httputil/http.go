@@ -54,7 +54,8 @@ func (c *HTTPClient) Do(method, path string, doOptions *DoOptions) (*http.Respon
 	}
 
 	// #TODO should pass context from the caller function
-	req, err := http.NewRequestWithContext(context.TODO(), method, path, body)
+	req, err := http.NewRequest(method, path, body) //nolint:noctx
+	// req = req.WithContext(context.TODO())
 	if err != nil {
 		return nil, err
 	}
