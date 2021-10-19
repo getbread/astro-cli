@@ -2,7 +2,6 @@ package airflow
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -13,7 +12,7 @@ import (
 )
 
 const (
-	defaultDirPerm fs.FileMode = 0o777
+	defaultDirPerm os.FileMode = 0o777
 )
 
 func initDirs(root string, dirs []string) error {

@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	filesystem "io/fs"
 	"os"
 	"path/filepath"
 
@@ -14,8 +13,8 @@ import (
 )
 
 const (
-	defaultDirPerm filesystem.FileMode = 0o770
-	newFilePerm    filesystem.FileMode = 0o600
+	defaultDirPerm os.FileMode = 0o770
+	newFilePerm    os.FileMode = 0o600
 )
 
 var (

@@ -2,7 +2,6 @@ package fileutil
 
 import (
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,7 +10,7 @@ import (
 )
 
 const (
-	defaultFilePerm fs.FileMode = 0o777
+	defaultFilePerm os.FileMode = 0o777
 )
 
 // Exists returns a boolean indicating if the given path already exists

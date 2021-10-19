@@ -1,7 +1,6 @@
 package testing
 
 import (
-	filesystem "io/fs"
 	"net/http"
 	"os"
 	"strings"
@@ -12,7 +11,7 @@ import (
 )
 
 const (
-	defaultFilePerm filesystem.FileMode = 0o777
+	defaultFilePerm os.FileMode = 0o777
 )
 
 // RoundTripFunc

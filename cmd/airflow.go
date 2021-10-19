@@ -52,12 +52,12 @@ func newAirflowRootCmd(client *houston.Client, out io.Writer) *cobra.Command {
 	cmd.AddCommand(
 		newAirflowInitCmd(client, out),
 		newAirflowDeployCmd(client, out),
-		newAirflowStartCmd(client, out),
-		newAirflowKillCmd(client, out),
-		newAirflowLogsCmd(client, out),
-		newAirflowStopCmd(client, out),
-		newAirflowPSCmd(client, out),
-		newAirflowRunCmd(client, out),
+		newAirflowStartCmd(),
+		newAirflowKillCmd(),
+		newAirflowLogsCmd(),
+		newAirflowStopCmd(),
+		newAirflowPSCmd(),
+		newAirflowRunCmd(),
 	)
 	return cmd
 }
@@ -72,13 +72,13 @@ func newDevRootCmd(client *houston.Client, out io.Writer) *cobra.Command {
 	cmd.AddCommand(
 		newAirflowInitCmd(client, out),
 		newAirflowDeployCmd(client, out),
-		newAirflowStartCmd(client, out),
-		newAirflowKillCmd(client, out),
-		newAirflowLogsCmd(client, out),
-		newAirflowStopCmd(client, out),
-		newAirflowPSCmd(client, out),
-		newAirflowRunCmd(client, out),
-		newAirflowUpgradeCheckCmd(client, out),
+		newAirflowStartCmd(),
+		newAirflowKillCmd(),
+		newAirflowLogsCmd(),
+		newAirflowStopCmd(),
+		newAirflowPSCmd(),
+		newAirflowRunCmd(),
+		newAirflowUpgradeCheckCmd(),
 	)
 	return cmd
 }
@@ -122,7 +122,7 @@ func newAirflowDeployCmd(client *houston.Client, out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func newAirflowStartCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
+func newAirflowStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start an Airflow cluster locally using docker-compose",
@@ -139,7 +139,7 @@ func newAirflowStartCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
 	return cmd
 }
 
-func newAirflowKillCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
+func newAirflowKillCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kill",
 		Short: "Kill a locally running Airflow cluster",
@@ -154,7 +154,7 @@ func newAirflowKillCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
 	return cmd
 }
 
-func newAirflowLogsCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
+func newAirflowLogsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs",
 		Short: "Output logs for a locally running Airflow cluster",
@@ -172,7 +172,7 @@ func newAirflowLogsCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
 	return cmd
 }
 
-func newAirflowStopCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
+func newAirflowStopCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop",
 		Short: "Stop a locally running Airflow cluster",
@@ -187,7 +187,7 @@ func newAirflowStopCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
 	return cmd
 }
 
-func newAirflowPSCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
+func newAirflowPSCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ps",
 		Short: "List locally running Airflow containers",
@@ -202,7 +202,7 @@ func newAirflowPSCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
 	return cmd
 }
 
-func newAirflowRunCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
+func newAirflowRunCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run a command inside locally running Airflow webserver",
@@ -219,7 +219,7 @@ func newAirflowRunCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
 	return cmd
 }
 
-func newAirflowUpgradeCheckCmd(_ *houston.Client, _ io.Writer) *cobra.Command {
+func newAirflowUpgradeCheckCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upgrade-check",
 		Short: "List DAG and config-level changes required to upgrade to Airflow 2.0",
