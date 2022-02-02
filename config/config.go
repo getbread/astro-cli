@@ -97,11 +97,11 @@ func initHome(fs afero.Fs) {
 
 	// If home config does not exist, create it
 	homeConfigExists, _ := fileutil.Exists(HomeConfigFile)
-
+	fmt.Println("temp>", homeConfigExists)
 	if !homeConfigExists {
 		err := CreateConfig(viperHome, HomeConfigPath, HomeConfigFile)
 		if err != nil {
-			fmt.Printf(messages.ErrConfigHomeCreation, err)
+			fmt.Println(messages.ErrConfigHomeCreation, err)
 			return
 		}
 	}
@@ -112,6 +112,7 @@ func initHome(fs afero.Fs) {
 		fmt.Printf(messages.ErrReadingConfig, err)
 		return
 	}
+	fmt.Println(*viperHome)
 }
 
 // Init viper for config file in project directory
