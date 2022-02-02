@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -35,8 +36,9 @@ contexts:
 	_ = afero.WriteFile(fs, HomeConfigFile, configRaw, 0777)
 	InitConfig(fs)
 	ctx, err := GetCurrentContext()
+	fmt.Println(ctx, err)
 	assert.NoError(t, err)
-	assert.Equal(t, "example.com", ctx.Domain)
+	assert.Equal(t, "example123.com", ctx.Domain)
 	assert.Equal(t, "token", ctx.Token)
 	assert.Equal(t, "ck05r3bor07h40d02y2hw4n4v", ctx.Workspace)
 }
