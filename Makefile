@@ -26,7 +26,7 @@ mod:
 build:
 	go build -o ${OUTPUT} -ldflags "${LDFLAGS_VERSION} ${LDFLAGS_GIT_COMMIT}" -tags=${GO_BUILD_TAGS} main.go
 
-test: lint
+test:
 	go test -tags=${GO_BUILD_TAGS} -count=1 -cover ./...
 	go test -tags=${GO_BUILD_TAGS} -coverprofile=coverage.txt -covermode=atomic ./...
 
