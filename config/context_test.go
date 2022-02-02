@@ -33,7 +33,11 @@ contexts:
     last_used_workspace: ck05r3bor07h40d02y2hw4n4v
     workspace: ck05r3bor07h40d02y2hw4n4v
 `)
+	resp, err := afero.ReadFile(fs, HomeConfigFile)
+	fmt.Println("temp home file 1>", string(resp), err)
 	_ = afero.WriteFile(fs, HomeConfigFile, configRaw, 0777)
+	resp, err = afero.ReadFile(fs, HomeConfigFile)
+	fmt.Println("temp home file 2>", string(resp), err)
 	InitConfig(fs)
 	ctx, err := GetCurrentContext()
 	fmt.Println(ctx, err)
