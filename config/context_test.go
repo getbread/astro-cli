@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/astronomer/astro-cli/pkg/fileutil"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,7 +35,8 @@ contexts:
     workspace: ck05r3bor07h40d02y2hw4n4v
 `)
 	resp, err := afero.ReadFile(fs, HomeConfigFile)
-	fmt.Println("temp home file 1>", string(resp), err)
+	fmt.Println("temp home file 1>", resp, err)
+	fmt.Println(fileutil.Exists(HomeConfigFile))
 	_ = afero.WriteFile(fs, HomeConfigFile, configRaw, 0777)
 	resp, err = afero.ReadFile(fs, HomeConfigFile)
 	fmt.Println("temp home file 2>", string(resp), err)
