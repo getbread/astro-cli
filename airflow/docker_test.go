@@ -83,7 +83,7 @@ services:
     image: test-project-name/airflow:latest
     container_name: scheduler
     command: >
-      bash -c "(airflow upgradedb || airflow db upgrade) && airflow scheduler"
+      bash -c "(airflow db upgrade || airflow upgradedb) && airflow scheduler"
     restart: unless-stopped
     networks:
       - airflow
@@ -113,8 +113,8 @@ services:
       bash -c 'if [[ -z "$$AIRFLOW__API__AUTH_BACKEND" ]] && [[ $$(pip show -f apache-airflow | grep basic_auth.py) ]];
         then export AIRFLOW__API__AUTH_BACKEND=airflow.api.auth.backend.basic_auth ;
         else export AIRFLOW__API__AUTH_BACKEND=airflow.api.auth.backend.default ; fi &&
-        { airflow create_user "$$@" || airflow users create "$$@" ; } &&
-        { airflow sync_perm || airflow sync-perm ;} &&
+        { airflow users create "$$@" || airflow create_user "$$@" ; } &&
+        { airflow sync-perm || airflow sync_perm ;} &&
         airflow webserver' -- -r Admin -u admin -e admin@example.com -f admin -l user -p admin
     restart: unless-stopped
     networks:
@@ -152,7 +152,7 @@ services:
     image: test-project-name/airflow:latest
     container_name: triggerer
     command: >
-      bash -c "(airflow upgradedb || airflow db upgrade) && airflow triggerer"
+      bash -c "(airflow db upgrade || airflow upgradedb) && airflow triggerer"
     restart: unless-stopped
     networks:
       - airflow

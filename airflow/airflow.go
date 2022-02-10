@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/astronomer/astro-cli/airflow/include"
@@ -18,7 +19,7 @@ import (
 const (
 	defaultDirPerm os.FileMode = 0777
 
-	defaultAirflowVersion = uint64(0x1) //nolint:gomnd
+	defaultAirflowVersion = uint64(0x2) //nolint:gomnd
 	componentName         = "airflow"
 
 	airflowVersionLabelName        = "io.astronomer.docker.airflow.version"
@@ -89,7 +90,17 @@ func Init(path, airflowImageTag string) error {
 		"requirements.txt":      "",
 		".env":                  "",
 		"airflow_settings.yaml": include.Settingsyml,
-		"dags/example-dag.py":   include.Exampledag,
+	}
+
+	semVer, err := semver.NewVersion(airflowImageTag)
+	if err != nil {
+		semVer = semver.MustParse(strconv.Itoa(int(defaultAirflowVersion)))
+	}
+	if semVer.Major() >= defaultAirflowVersion {
+		files["dags/example-dag.py"] = include.ExampleDAGAirflow2
+		files["dags/example-dag-advanced.py"] = include.AdvanceExampleDAGAirflow2
+	} else {
+		files["dags/example-dag.py"] = include.Exampledag
 	}
 
 	containerEngine := config.CFG.ContainerEngine.GetString()
@@ -120,7 +131,7 @@ func ParseVersionFromDockerFile(airflowHome, dockerfile string) (uint64, error) 
 	_, airflowTag := docker.GetImageTagFromParsedFile(cmd)
 	semVer, err := semver.NewVersion(airflowTag)
 	if err != nil {
-		return defaultAirflowVersion, nil // Default to Airflow 1 if the user has a custom image without a semVer tag
+		return defaultAirflowVersion, nil // Default to Airflow 2 if the user has a custom image without a semVer tag
 	}
 
 	return semVer.Major(), nil
