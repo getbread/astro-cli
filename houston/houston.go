@@ -15,6 +15,7 @@ import (
 
 var (
 	ErrInaptPermissions        = errors.New("You do not have the appropriate permissions for that") //nolint
+	ErrAuthTokenRefreshFailed  = errors.New("AUTH_TOKEN_REFRESH_FAILED")
 	ErrVerboseInaptPermissions = errors.New("you do not have the appropriate permissions for that: Your token has expired. Please log in again")
 )
 
@@ -34,6 +35,12 @@ type ClientInterface interface {
 	ListWorkspaceUserAndRoles(workspaceID string) (*Workspace, error)
 	UpdateWorkspaceUserRole(workspaceID, email, role string) (string, error)
 	GetWorkspaceUserRole(workspaceID, email string) (WorkspaceUserRoleBindings, error)
+	// workspace teams and roles
+	AddWorkspaceTeam(workspaceID, teamID, role string) (*Workspace, error)
+	DeleteWorkspaceTeam(workspaceID, teamID string) (*Workspace, error)
+	ListWorkspaceTeamsAndRoles(workspaceID string) ([]Team, error)
+	UpdateWorkspaceTeamRole(workspaceID, teamID, role string) (string, error)
+	GetWorkspaceTeamRole(workspaceID, teamID string) (*Team, error)
 	// auth
 	AuthenticateWithBasicAuth(username, password string) (string, error)
 	GetAuthConfig() (*AuthConfig, error)
@@ -51,6 +58,11 @@ type ClientInterface interface {
 	AddDeploymentUser(variables UpdateDeploymentUserRequest) (*RoleBinding, error)
 	UpdateDeploymentUser(variables UpdateDeploymentUserRequest) (*RoleBinding, error)
 	DeleteDeploymentUser(deploymentID, email string) (*RoleBinding, error)
+	// deployment teams
+	AddDeploymentTeam(deploymentID string, teamID string, role string) (*RoleBinding, error)
+	RemoveDeploymentTeam(deploymentID string, teamID string) (*RoleBinding, error)
+	ListDeploymentTeamsAndRoles(deploymentID string) ([]Team, error)
+	UpdateDeploymentTeamRole(deploymentID string, teamID string, role string) (*RoleBinding, error)
 	// service account
 	CreateDeploymentServiceAccount(variables *CreateServiceAccountRequest) (*DeploymentServiceAccount, error)
 	DeleteDeploymentServiceAccount(deploymentID, serviceAccountID string) (*ServiceAccount, error)
@@ -61,6 +73,9 @@ type ClientInterface interface {
 	// app
 	GetAppConfig() (*AppConfig, error)
 	GetAvailableNamespaces() ([]Namespace, error)
+	// teams
+	GetTeam(teamID string) (*Team, error)
+	GetTeamUsers(teamID string) ([]User, error)
 }
 
 // ClientImplementation - implementation of the Houston Client Interface
@@ -154,7 +169,7 @@ func (c *Client) Do(doOpts httputil.DoOptions) (*Response, error) {
 	// Houston Specific Errors
 	if decode.Errors != nil {
 		err = fmt.Errorf("%s", decode.Errors[0].Message) //nolint:goerr113
-		if err.Error() == ErrInaptPermissions.Error() {
+		if err.Error() == ErrInaptPermissions.Error() || err.Error() == ErrAuthTokenRefreshFailed.Error() {
 			return nil, ErrVerboseInaptPermissions
 		}
 		return nil, err
