@@ -1,12 +1,14 @@
 package airflow
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -37,21 +39,81 @@ func (d *DockerImage) Build(config containerTypes.ImageBuildConfig) error {
 	if err != nil {
 		return err
 	}
+
+	dockerfile := "Dockerfile"
 	imageName := imageName(d.imageName, "latest")
 
-	args := []string{
-		"build",
-		"-t",
-		imageName,
-		".",
-	}
-	if config.NoCache {
-		args = append(args, "--no-cache")
-	}
-	// Build image
-	err = dockerExec(nil, nil, args...)
+	ctx := context.Background()
+
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		return fmt.Errorf("command 'docker build -t %s failed: %w", d.imageName, err)
+		log.Debugf("Error setting up new Client ops %v", err)
+		panic(err)
+	}
+
+	// Create a buffer
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	defer tw.Close()
+
+	// Create a filereader
+	dockerFileReader, err := os.Open(dockerfile)
+	if err != nil {
+		return err
+	}
+
+	// Read the actual Dockerfile
+	readDockerFile, err := ioutil.ReadAll(dockerFileReader)
+	if err != nil {
+		return err
+	}
+
+	// Make a TAR header for the file
+	tarHeader := &tar.Header{
+		Name: dockerfile,
+		Size: int64(len(readDockerFile)),
+	}
+
+	// Writes the header described for the TAR file
+	err = tw.WriteHeader(tarHeader)
+	if err != nil {
+		return err
+	}
+
+	// Writes the dockerfile data to the TAR file
+	_, err = tw.Write(readDockerFile)
+	if err != nil {
+		return err
+	}
+
+	dockerFileTarReader := bytes.NewReader(buf.Bytes())
+
+	// Define the build options to use for the file
+	// https://godoc.org/github.com/docker/docker/api/types#ImageBuildOptions
+	buildOptions := types.ImageBuildOptions{
+		Context:    dockerFileTarReader,
+		Dockerfile: dockerfile,
+		Remove:     true,
+		Tags:       []string{imageName},
+		NoCache:    config.NoCache,
+	}
+
+	// Build the actual image
+	imageBuildResponse, err := cli.ImageBuild(
+		ctx,
+		dockerFileTarReader,
+		buildOptions,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	// Read the STDOUT from the build process
+	defer imageBuildResponse.Body.Close()
+	_, err = io.Copy(os.Stdout, imageBuildResponse.Body)
+	if err != nil {
+		return err
 	}
 
 	return nil
