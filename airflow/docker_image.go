@@ -1,11 +1,11 @@
 package airflow
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/moby/term"
 	"io"
@@ -46,7 +46,7 @@ func (d *DockerImage) Build(config containerTypes.ImageBuildConfig) error {
 
 	// Create a docker client
 	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		log.Debugf("Error setting up new Client ops %v", err)
 		panic(err)
@@ -69,7 +69,7 @@ func (d *DockerImage) Build(config containerTypes.ImageBuildConfig) error {
 	}
 
 	// Build the actual image
-	imageBuildResponse, err := cli.ImageBuild(
+	imageBuildResponse, err := dockerClient.ImageBuild(
 		ctx,
 		dockerBuildContext,
 		buildOptions,
@@ -149,21 +149,37 @@ func (d *DockerImage) Push(cloudDomain, token, remoteImageTag string) error {
 }
 
 func (d *DockerImage) GetImageLabels() (map[string]string, error) {
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
+	// Create a docker client
+	ctx := context.Background()
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		log.Debugf("Error setting up new Client ops %v", err)
+		panic(err)
+	}
 
 	var labels map[string]string
-	err := dockerExec(stdout, stderr, "inspect", "--format", "{{ json .Config.Labels }}", imageName(d.imageName, "latest"))
+
+	// Use an image list filter to get the ID of the image
+	filter := filters.NewArgs()
+	fullImageName := imageName(d.imageName, "latest")
+	filter.Add("reference", fullImageName)
+	imageList, err := dockerClient.ImageList(ctx, types.ImageListOptions{Filters: filter})
 	if err != nil {
 		return labels, err
 	}
-	if execErr := stderr.String(); execErr != "" {
-		return labels, fmt.Errorf("%s: %w", execErr, errGetImageLabel)
+
+	// Return an error if the image isn't found
+	if len(imageList) == 0 {
+		return labels, fmt.Errorf("docker image %s not found: %v", fullImageName, errGetImageLabel)
 	}
-	err = json.Unmarshal(stdout.Bytes(), &labels)
+
+	// Get the image's labels by using the image ID
+	imageInspect, _, err := dockerClient.ImageInspectWithRaw(ctx, imageList[0].ID)
 	if err != nil {
 		return labels, err
 	}
+
+	labels = imageInspect.Config.Labels
 	return labels, nil
 }
 
