@@ -1,16 +1,17 @@
 package airflow
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/docker/docker/pkg/archive"
+	"github.com/moby/term"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	containerTypes "github.com/astronomer/astro-cli/airflow/types"
 
@@ -43,55 +44,24 @@ func (d *DockerImage) Build(config containerTypes.ImageBuildConfig) error {
 	dockerfile := "Dockerfile"
 	imageName := imageName(d.imageName, "latest")
 
+	// Create a docker client
 	ctx := context.Background()
-
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		log.Debugf("Error setting up new Client ops %v", err)
 		panic(err)
 	}
 
-	// Create a buffer
-	buf := new(bytes.Buffer)
-	tw := tar.NewWriter(buf)
-	defer tw.Close()
-
-	// Create a filereader
-	dockerFileReader, err := os.Open(dockerfile)
+	// Create a tar of the Docker build context
+	filePath := filepath.Join(config.Path)
+	dockerBuildContext, err := archive.TarWithOptions(filePath, &archive.TarOptions{})
 	if err != nil {
 		return err
 	}
-
-	// Read the actual Dockerfile
-	readDockerFile, err := ioutil.ReadAll(dockerFileReader)
-	if err != nil {
-		return err
-	}
-
-	// Make a TAR header for the file
-	tarHeader := &tar.Header{
-		Name: dockerfile,
-		Size: int64(len(readDockerFile)),
-	}
-
-	// Writes the header described for the TAR file
-	err = tw.WriteHeader(tarHeader)
-	if err != nil {
-		return err
-	}
-
-	// Writes the dockerfile data to the TAR file
-	_, err = tw.Write(readDockerFile)
-	if err != nil {
-		return err
-	}
-
-	dockerFileTarReader := bytes.NewReader(buf.Bytes())
 
 	// Define the build options to use for the file
-	// https://godoc.org/github.com/docker/docker/api/types#ImageBuildOptions
 	buildOptions := types.ImageBuildOptions{
-		Context:    dockerFileTarReader,
+		Context:    dockerBuildContext,
 		Dockerfile: dockerfile,
 		Remove:     true,
 		Tags:       []string{imageName},
@@ -101,17 +71,18 @@ func (d *DockerImage) Build(config containerTypes.ImageBuildConfig) error {
 	// Build the actual image
 	imageBuildResponse, err := cli.ImageBuild(
 		ctx,
-		dockerFileTarReader,
+		dockerBuildContext,
 		buildOptions,
 	)
-
 	if err != nil {
 		return err
 	}
 
 	// Read the STDOUT from the build process
 	defer imageBuildResponse.Body.Close()
-	_, err = io.Copy(os.Stdout, imageBuildResponse.Body)
+
+	termFd, isTerm := term.GetFdInfo(os.Stdout)
+	err = jsonmessage.DisplayJSONMessagesStream(imageBuildResponse.Body, os.Stdout, termFd, isTerm, nil)
 	if err != nil {
 		return err
 	}

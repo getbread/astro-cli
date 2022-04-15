@@ -18,6 +18,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/websocket v1.4.2
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
+	github.com/jhoonb/archivex v0.0.0-20201016144719-6a343cdae81d
 	github.com/joho/godotenv v1.4.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.9.3
